@@ -1,0 +1,8 @@
+{
+  "name": "tok-jhal-misti-co",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "check:js": "node --check app.js"
+  }
+}

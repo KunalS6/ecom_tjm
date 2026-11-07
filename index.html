@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="bn">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#fff8eb">
+    <meta name="description" content="Tok Jhal Misti Co. — homemade Bengali pickles, sweets, and papad, made with love.">
+    <title>টক ঝাল মিষ্টি কো. — ঘরের স্বাদ, মনভরা ভালোবাসা</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/styles.css?v=2">
+    <script src="/app.js?v=2" defer></script>
+  </head>
+  <body>
+    <div class="announcement"><span>♥</span> <span data-i18n="announcement">প্রতিটি স্বাদে মিশে আছে ঘরের যত্ন</span> <span>♥</span></div>
+    <header class="site-header">
+      <a class="brand" href="#" aria-label="Tok Jhal Misti Co. — home" data-i18n-aria="brandHome">
+        <img class="brand-logo" src="/logo.jpeg" alt="Tok Jhal Misti Co. — Bringing flavours to every meal" data-i18n-alt="logoAlt">
+      </a>
+      <nav class="main-nav" aria-label="Main navigation" data-i18n-aria="navLabel">
+        <a href="#products" data-i18n="navProducts">সব পণ্য</a>
+        <a href="#products" data-nav-filter="pickle" data-i18n="navPickles">আচার</a>
+        <a href="#products" data-nav-filter="homemade" data-i18n="navHomemade">ঘরোয়া পণ্য</a>
+        <a href="#story" data-i18n="navStory">আমাদের কথা</a>
+      </nav>
+      <div class="header-actions">
+        <div class="language-switch" role="group" aria-label="Choose language">
+          <button type="button" data-language="bn" class="language-option active" aria-pressed="true">বাংলা</button>
+          <span aria-hidden="true"></span>
+          <button type="button" data-language="en" class="language-option" aria-pressed="false">EN</button>
+        </div>
+        <button class="cart-button" id="open-cart" type="button" aria-label="শপিং ব্যাগ খুলুন" data-i18n-aria="openBag">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 8h14l1 12H4L5 8Zm4 0a3 3 0 0 1 6 0" /></svg>
+          <span data-i18n="bag">ব্যাগ</span><span class="cart-count" id="cart-count">০</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="eyebrow-line"></span><span data-i18n="heroEyebrow">একটু ঘর, একটু ভালোবাসা</span></div>
+          <h1 id="hero-title" data-i18n-html="heroTitle">বাঙালির চেনা স্বাদ,<br><em>ঘরের যত্নে</em> তৈরি</h1>
+          <p data-i18n="heroDescription">আচারের টক-ঝাল থেকে নাড়ুর মিষ্টি—প্রতিটি কামড়ে ফিরে পান নিজের ঘরের সেই চেনা অনুভূতি।</p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#products"><span data-i18n="heroCta">স্বাদ বেছে নিন</span> <span aria-hidden="true">↗</span></a>
+            <a class="text-link" href="#story"><span data-i18n="heroStory">আমাদের গল্প</span> <span aria-hidden="true">→</span></a>
+          </div>
+          <div class="hero-note"><span class="note-stars" aria-hidden="true">✳</span><span><strong data-i18n="heroNoteTitle">যত্ন করে তৈরি</strong><small data-i18n="heroNoteText">আপনার পরিবারের জন্য</small></span></div>
+        </div>
+        <div class="hero-art" aria-label="আচার ও ঘরোয়া খাবারের সাজানো থালা" data-i18n-aria="heroImage">
+          <div class="art-sun"></div><div class="art-sparkle sparkle-one">✳</div><div class="art-sparkle sparkle-two">✳</div>
+          <div class="art-leaf leaf-one"></div><div class="art-leaf leaf-two"></div>
+          <div class="art-board"></div>
+          <div class="hero-jar jar-large"><div class="jar-lid"></div><div class="jar-neck"></div><div class="jar-body"><span data-i18n-html="jarMango">আমের<br>আচার</span><i>✳</i></div></div>
+          <div class="hero-jar jar-small"><div class="jar-lid"></div><div class="jar-neck"></div><div class="jar-body"><span data-i18n-html="jarLemon">লেবুর<br>আচার</span><i>✳</i></div></div>
+          <div class="naru-bowl"><span>🥥</span><span>🥥</span><span>🥥</span></div>
+          <div class="art-caption"><span class="caption-dot"></span> <span data-i18n="artCaption">হাতে বানানো, মন থেকে</span></div>
+        </div>
+        <div class="hero-bottom-note"><span>০১</span> — <span data-i18n="heroBottom">রসনায় বাঙালিয়ানা</span></div>
+      </section>
+
+      <section class="promise-strip" aria-label="আমাদের অঙ্গীকার" data-i18n-aria="promisesLabel">
+        <div><span class="promise-icon">❋</span><span><strong data-i18n="promiseHomeTitle">ঘরোয়া ভালোবাসা</strong><small data-i18n="promiseHomeText">প্রতিটি পণ্যে যত্নের ছোঁয়া</small></span></div>
+        <div><span class="promise-icon">✿</span><span><strong data-i18n="promiseTasteTitle">চেনা বাঙালি স্বাদ</strong><small data-i18n="promiseTasteText">যে স্বাদ মনে থেকে যায়</small></span></div>
+        <div><span class="promise-icon">♡</span><span><strong data-i18n="promiseCareTitle">আপনার জন্যই তৈরি</strong><small data-i18n="promiseCareText">ঘরের মানুষের কথা ভেবে</small></span></div>
+      </section>
+
+      <section class="products-section section-wrap" id="products">
+        <div class="section-heading">
+          <div><div class="eyebrow"><span class="eyebrow-line"></span><span data-i18n="productsEyebrow">ভালোবাসার সম্ভার</span></div><h2 data-i18n="productsTitle">কী খেতে ইচ্ছে করছে?</h2><p data-i18n="productsIntro">চেনা স্বাদের ভাঁড়ার থেকে বেছে নিন আপনার পছন্দ।</p></div>
+          <label class="search-box"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 4 4"/></svg><input id="product-search" type="search" placeholder="পণ্য খুঁজুন..." aria-label="পণ্য খুঁজুন" data-i18n-placeholder="searchPlaceholder" data-i18n-aria="searchLabel"></label>
+        </div>
+        <div class="product-toolbar">
+          <div class="filter-tabs" role="group" aria-label="পণ্য বাছাই" data-i18n-aria="filterLabel">
+            <button type="button" class="filter-tab active" data-filter="all"><span data-i18n="filterAll">সব পণ্য</span> <span data-count="8">০৮</span></button>
+            <button type="button" class="filter-tab" data-filter="pickle"><span data-i18n="filterPickle">আচার</span> <span data-count="4">০৪</span></button>
+            <button type="button" class="filter-tab" data-filter="homemade"><span data-i18n="filterHomemade">ঘরোয়া পণ্য</span> <span data-count="4">০৪</span></button>
+          </div>
+          <span class="catalog-note"><span data-i18n="catalogNote">ভালোবাসা দিয়ে বানানো</span> <span aria-hidden="true">✳</span></span>
+        </div>
+        <div class="product-grid" id="product-grid" aria-live="polite">
+          <div class="loading-state">আপনার পছন্দের স্বাদগুলো আসছে…</div>
+        </div>
+        <p class="price-note" data-i18n="priceNote">দামগুলো নমুনা হিসেবে দেখানো হয়েছে—ব্যবসার প্রকৃত দাম, প্যাকেটের পরিমাণ ও ডেলিভারি চার্জ বসিয়ে নিন।</p>
+      </section>
+
+      <section class="story-section" id="story">
+        <div class="story-art"><div class="story-stamp"><span data-i18n="storyStampTop">ঘরের</span><strong data-i18n="storyStampMain">স্বাদ</strong><span data-i18n="storyStampBottom">ঘরের</span></div><div class="story-art-caption" data-i18n="storyCaption">ভালোবাসায় মাখা বাঙালিয়ানা</div></div>
+        <div class="story-copy"><div class="eyebrow"><span class="eyebrow-line"></span><span data-i18n="storyEyebrow">আমাদের ছোট্ট গল্প</span></div><h2 data-i18n-html="storyTitle">একটু টক, একটু ঝাল,<br><em>আর অনেকটা ভালোবাসা।</em></h2><p data-i18n="storyP1">কিছু স্বাদ শুধু জিভে লাগে না—মনে গেঁথে থাকে। সেই চেনা ঘরোয়া স্বাদ আর আপন মানুষের যত্নকে সঙ্গে নিয়েই আমাদের পথচলা।</p><p data-i18n="storyP2">আচারের বয়াম হোক কিংবা নাড়ুর মিষ্টি—প্রতিটি পণ্যে থাকুক নিজের বাড়ির মতো আপন অনুভূতি।</p><a class="text-link" href="#products"><span data-i18n="storyLink">আমাদের স্বাদগুলো দেখুন</span> <span aria-hidden="true">→</span></a></div>
+      </section>
+
+      <section class="closing-banner"><div class="banner-sparkle" aria-hidden="true">✳</div><p data-i18n="bannerEyebrow">প্রিয়জনের সঙ্গে ভাগ করে নিন</p><h2 data-i18n-html="bannerTitle">ঘরের স্বাদ ছড়িয়ে পড়ুক<br>আপন মানুষের কাছে।</h2><a class="button button-light" href="#products"><span data-i18n="bannerCta">পছন্দের পণ্য বেছে নিন</span> <span aria-hidden="true">↗</span></a><span class="banner-flower flower-left" aria-hidden="true">✿</span><span class="banner-flower flower-right" aria-hidden="true">❋</span></section>
+    </main>
+
+    <footer class="site-footer"><a class="brand footer-brand" href="#" aria-label="Tok Jhal Misti Co. — home" data-i18n-aria="brandHome"><img class="brand-logo" src="/logo.jpeg" alt="Tok Jhal Misti Co." data-i18n-alt="logoAlt"></a><p data-i18n="footerNote">বাঙালির চেনা স্বাদে, ঘরের ভালোবাসায়।</p><span class="footer-copy">© <span id="current-year"></span> Tok Jhal Misti Co.</span></footer>
+
+    <div class="overlay" id="cart-overlay" hidden>
+      <aside class="cart-drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title">
+        <div class="drawer-header"><div><span class="drawer-kicker" data-i18n="cartKicker">আপনার পছন্দ</span><h2 id="cart-title" data-i18n="cartTitle">শপিং ব্যাগ</h2></div><button class="icon-button" data-close-cart type="button" aria-label="ব্যাগ বন্ধ করুন" data-i18n-aria="closeBag">×</button></div>
+        <div class="cart-items" id="cart-items"></div>
+        <div class="cart-footer"><div class="subtotal-row"><span data-i18n="subtotal">সাবটোটাল</span><strong id="cart-total">₹০</strong></div><p data-i18n="deliveryNote">ডেলিভারি চার্জ অর্ডার নিশ্চিত করার সময় জানানো হবে।</p><button class="button button-primary checkout-button" id="checkout-button" type="button"><span data-i18n="checkout">অর্ডার এগিয়ে নিন</span> <span aria-hidden="true">→</span></button></div>
+      </aside>
+    </div>
+
+    <div class="modal-backdrop" id="checkout-modal" hidden>
+      <section class="checkout-modal" role="dialog" aria-modal="true" aria-labelledby="checkout-title">
+        <div class="drawer-header"><div><span class="drawer-kicker" data-i18n="checkoutKicker">আর এক ধাপ</span><h2 id="checkout-title" data-i18n="checkoutTitle">ডেলিভারির তথ্য</h2></div><button class="icon-button" data-close-checkout type="button" aria-label="ফর্ম বন্ধ করুন" data-i18n-aria="closeForm">×</button></div>
+        <p class="checkout-intro" data-i18n="checkoutIntro">অর্ডার নিশ্চিত করতে আপনার তথ্য দিন। আমরা ফোনে যোগাযোগ করব।</p>
+        <form id="checkout-form" novalidate>
+          <label><span data-i18n="nameLabel">আপনার নাম</span><input name="name" autocomplete="name" required minlength="2" maxlength="80" placeholder="যে নামে অর্ডার করবেন" data-i18n-placeholder="namePlaceholder"></label>
+          <label><span data-i18n="phoneLabel">ফোন নম্বর</span><input name="phone" type="tel" autocomplete="tel" required maxlength="24" placeholder="আপনার যোগাযোগের নম্বর" data-i18n-placeholder="phonePlaceholder"></label>
+          <label><span data-i18n="addressLabel">সম্পূর্ণ ঠিকানা</span><textarea name="address" autocomplete="street-address" required minlength="8" maxlength="300" rows="3" placeholder="বাড়ি, রাস্তা, এলাকা ও পিন/পোস্টকোড" data-i18n-placeholder="addressPlaceholder"></textarea></label>
+          <label><span><span data-i18n="noteLabel">বিশেষ নির্দেশ</span> <span class="optional" data-i18n="optional">(ঐচ্ছিক)</span></span><textarea name="note" maxlength="500" rows="2" placeholder="ডেলিভারি সংক্রান্ত কোনো কথা থাকলে লিখুন" data-i18n-placeholder="notePlaceholder"></textarea></label>
+          <p class="form-error" id="form-error" role="alert"></p>
+          <div class="checkout-total"><span data-i18n="orderTotal">মোট পণ্যমূল্য</span><strong id="checkout-total">₹০</strong></div>
+          <button class="button button-primary checkout-submit" type="submit"><span data-i18n="confirmOrder">অর্ডার নিশ্চিত করুন</span> <span aria-hidden="true">→</span></button>
+          <small class="payment-note" data-i18n="paymentNote">পেমেন্ট ও ডেলিভারির বিস্তারিত অর্ডার নিশ্চিত করার পর জানানো হবে।</small>
+        </form>
+      </section>
+    </div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </body>
+</html>
