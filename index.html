@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Serif+Bengali:wght@500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="/styles.css?v=2">
-    <script src="/app.js?v=2" defer></script>
+    <link rel="stylesheet" href="/styles.css?v=4">
+    <script src="/app.js?v=4" defer></script>
   </head>
   <body>
     <div class="announcement"><span>♥</span> <span data-i18n="announcement">প্রতিটি স্বাদে মিশে আছে ঘরের যত্ন</span> <span>♥</span></div>
@@ -109,15 +109,37 @@
         <div class="drawer-header"><div><span class="drawer-kicker" data-i18n="checkoutKicker">আর এক ধাপ</span><h2 id="checkout-title" data-i18n="checkoutTitle">ডেলিভারির তথ্য</h2></div><button class="icon-button" data-close-checkout type="button" aria-label="ফর্ম বন্ধ করুন" data-i18n-aria="closeForm">×</button></div>
         <p class="checkout-intro" data-i18n="checkoutIntro">অর্ডার নিশ্চিত করতে আপনার তথ্য দিন। আমরা ফোনে যোগাযোগ করব।</p>
         <form id="checkout-form" novalidate>
+          <section class="checkout-notice" aria-live="polite">
+            <strong data-i18n="checkoutNoticeTitle">অর্ডারের তথ্য নিরাপদে সংরক্ষণ করা হবে</strong>
+            <p data-i18n="checkoutNoticeText">পেমেন্টের নম্বর এখনো যোগ করা হয়নি। ব্যবসার পক্ষ থেকে পেমেন্টের নির্দেশনা না পাওয়া পর্যন্ত টাকা পাঠাবেন না।</p>
+          </section>
           <label><span data-i18n="nameLabel">আপনার নাম</span><input name="name" autocomplete="name" required minlength="2" maxlength="80" placeholder="যে নামে অর্ডার করবেন" data-i18n-placeholder="namePlaceholder"></label>
           <label><span data-i18n="phoneLabel">ফোন নম্বর</span><input name="phone" type="tel" autocomplete="tel" required maxlength="24" placeholder="আপনার যোগাযোগের নম্বর" data-i18n-placeholder="phonePlaceholder"></label>
           <label><span data-i18n="addressLabel">সম্পূর্ণ ঠিকানা</span><textarea name="address" autocomplete="street-address" required minlength="8" maxlength="300" rows="3" placeholder="বাড়ি, রাস্তা, এলাকা ও পিন/পোস্টকোড" data-i18n-placeholder="addressPlaceholder"></textarea></label>
           <label><span><span data-i18n="noteLabel">বিশেষ নির্দেশ</span> <span class="optional" data-i18n="optional">(ঐচ্ছিক)</span></span><textarea name="note" maxlength="500" rows="2" placeholder="ডেলিভারি সংক্রান্ত কোনো কথা থাকলে লিখুন" data-i18n-placeholder="notePlaceholder"></textarea></label>
+          <label><span data-i18n="paymentReferenceLabel">পেমেন্টের রেফারেন্স নম্বর</span> <span class="optional" data-i18n="optional">(ঐচ্ছিক)</span><input name="payment_reference" maxlength="100" placeholder="UPI লেনদেনের রেফারেন্স নম্বর" data-i18n-placeholder="paymentReferencePlaceholder"></label>
+          <label class="proof-upload-label"><span><span data-i18n="paymentProofLabel">পেমেন্টের স্ক্রিনশট</span> <span class="optional" data-i18n="optional">(ঐচ্ছিক)</span></span><span class="proof-upload-help" data-i18n="paymentProofHelp">JPG, PNG বা WebP · সর্বোচ্চ ৫ MB</span><input name="payment_proof" id="payment-proof" type="file" accept="image/jpeg,image/png,image/webp"><span id="proof-file-name" class="proof-file-name" data-i18n="noFileChosen">কোনো ফাইল বেছে নেওয়া হয়নি</span></label>
+          <img id="proof-preview" class="checkout-proof-preview" alt="" hidden>
+          <label class="proof-consent" id="proof-consent-label" hidden><input name="proof_consent" type="checkbox"><span data-i18n="proofConsent">স্ক্রিনশট দিলে সেটি নিরাপদে পর্যালোচনার জন্য সম্মতি দিচ্ছি।</span></label>
           <p class="form-error" id="form-error" role="alert"></p>
           <div class="checkout-total"><span data-i18n="orderTotal">মোট পণ্যমূল্য</span><strong id="checkout-total">₹০</strong></div>
           <button class="button button-primary checkout-submit" type="submit"><span data-i18n="confirmOrder">অর্ডার নিশ্চিত করুন</span> <span aria-hidden="true">→</span></button>
-          <small class="payment-note" data-i18n="paymentNote">পেমেন্ট ও ডেলিভারির বিস্তারিত অর্ডার নিশ্চিত করার পর জানানো হবে।</small>
+          <small class="payment-note" data-i18n="paymentNote">অর্ডার পাঠানোর পর ইমেলে পর্যালোচনার লিংক যাবে। সিদ্ধান্ত হলে এই পাতায় কারণ/নিশ্চিতকরণ দেখা যাবে।</small>
         </form>
+      </section>
+    </div>
+    <div class="modal-backdrop" id="order-modal" hidden>
+      <section class="checkout-modal order-result-modal" role="dialog" aria-modal="true" aria-labelledby="order-result-title">
+        <div class="drawer-header"><div><span class="drawer-kicker" data-i18n="orderResultKicker">অর্ডারের অবস্থা</span><h2 id="order-result-title" data-i18n="orderPendingTitle">পেমেন্ট যাচাই চলছে</h2></div><button class="icon-button" id="close-order-modal" type="button" aria-label="বন্ধ করুন" data-i18n-aria="closeForm">×</button></div>
+        <div class="order-result-body">
+          <p id="order-result-copy" data-i18n="orderPendingCopy">আপনার স্ক্রিনশট পেয়েছি। পেমেন্ট মিলিয়ে দেখার পরেই অর্ডার নিশ্চিত হবে।</p>
+          <p class="order-reference"><span data-i18n="orderReferenceLabel">অর্ডার নম্বর</span>: <strong id="order-reference"></strong></p>
+          <p id="order-notification-note" class="form-error"></p>
+          <div id="order-details" class="order-details" hidden></div>
+          <p id="order-rejection-reason" class="order-rejection-reason" hidden></p>
+          <a id="open-order-status" class="text-link" href="#" data-i18n="openOrderStatus" target="_blank" rel="noopener noreferrer">অর্ডারের অবস্থা দেখুন</a>
+          <button class="button button-primary receipt-download" id="download-receipt" type="button" hidden data-i18n="downloadReceipt">অর্ডার নিশ্চিতকরণ PDF ডাউনলোড</button>
+        </div>
       </section>
     </div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>

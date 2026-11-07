@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="bn">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="referrer" content="no-referrer">
+    <meta name="theme-color" content="#fff8eb">
+    <title>Order review · Tok Jhal Misti Co.</title>
+    <link rel="stylesheet" href="/styles.css?v=4">
+    <script src="/review.js?v=2" defer></script>
+  </head>
+  <body class="private-page">
+    <main class="private-card" id="review-page" data-order-id="{{ public_id }}">
+      <a class="private-brand" href="/"><img src="/logo.jpeg" alt="Tok Jhal Misti Co."></a>
+      <span class="private-kicker">Private order review</span>
+      <h1>Review this order</h1>
+      <p class="private-intro">Check the customer details and order before accepting or rejecting it. If you reject it, provide a clear reason so the customer knows what to do next.</p>
+      <div id="review-status" class="private-status" role="status">Loading order details…</div>
+      <section id="review-details" class="review-details" hidden>
+        <div class="review-summary" id="review-summary"></div>
+        <div id="proof-section" hidden>
+          <h2>Optional payment screenshot</h2>
+          <img class="proof-preview" id="proof-preview" alt="Customer-provided payment screenshot">
+        </div>
+        <label class="rejection-reason-field" for="rejection-reason">Reason for rejection <span>(required when rejecting)</span>
+          <textarea id="rejection-reason" maxlength="500" rows="3" placeholder="Explain why this order cannot be accepted"></textarea>
+        </label>
+        <div class="review-actions">
+          <button class="button button-primary" id="approve-order" type="button">Accept order</button>
+          <button class="button button-secondary" id="reject-order" type="button">Reject order</button>
+        </div>
+        <p class="private-footnote">The customer will see your decision on their order status page. SMS delivery requires a configured SMS provider.</p>
+      </section>
+    </main>
+  </body>
+</html>

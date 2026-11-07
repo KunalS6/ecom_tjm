@@ -3,3 +3,16 @@ __pycache__/
 *.py[cod]
 instance/
 .pytest_cache/
+
+# Local credentials and provider configuration
+.env
+.env.*
+!.env.example
+.secrets/
+secrets/
+credentials.json
+service-account*.json
+*.pem
+*.key
+*.p12
+*.pfx

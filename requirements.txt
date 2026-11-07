@@ -5,3 +5,7 @@ itsdangerous==2.2.0
 Jinja2==3.1.6
 MarkupSafe==3.0.4
 Werkzeug==3.1.9
+pillow==12.3.0
+fpdf2==2.9.0
+fonttools==4.68.0
+uharfbuzz==0.57.0

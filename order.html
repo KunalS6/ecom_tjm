@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="{{ language }}">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex,nofollow">
+    <meta name="referrer" content="no-referrer">
+    <meta name="theme-color" content="#fff8eb">
+    <title>Order status · Tok Jhal Misti Co.</title>
+    <link rel="stylesheet" href="/styles.css?v=4">
+    <script src="/order.js?v=2" defer></script>
+  </head>
+  <body class="private-page">
+    <main class="private-card" id="customer-order" data-order-id="{{ public_id }}">
+      <a class="private-brand" href="/"><img src="/logo.jpeg" alt="Tok Jhal Misti Co."></a>
+      <span class="private-kicker">Tok Jhal Misti Co.</span>
+      <h1>{% if language == "bn" %}আপনার অর্ডার{% else %}Your order{% endif %}</h1>
+      <div id="customer-order-status" class="private-status" role="status">{% if language == "bn" %}অর্ডারের অবস্থা দেখা হচ্ছে…{% else %}Checking order status…{% endif %}</div>
+      <div id="customer-order-details" class="order-details" hidden></div>
+      <p id="customer-rejection-reason" class="order-rejection-reason" hidden></p>
+      <button class="button button-primary receipt-download" id="download-receipt" type="button" hidden>{% if language == "bn" %}অর্ডার নিশ্চিতকরণ PDF ডাউনলোড{% else %}Download order confirmation PDF{% endif %}</button>
+    </main>
+  </body>
+</html>

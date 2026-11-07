@@ -71,7 +71,7 @@ const translations = {
     checkout: "অর্ডার এগিয়ে নিন",
     checkoutKicker: "আর এক ধাপ",
     checkoutTitle: "ডেলিভারির তথ্য",
-    checkoutIntro: "অর্ডার নিশ্চিত করতে আপনার তথ্য দিন। আমরা ফোনে যোগাযোগ করব।",
+    checkoutIntro: "অর্ডার জমা দিন—ব্যবসা ইমেলে পাঠানো ব্যক্তিগত লিংক থেকে এটি পর্যালোচনা করবে।",
     nameLabel: "আপনার নাম",
     namePlaceholder: "যে নামে অর্ডার করবেন",
     phoneLabel: "ফোন নম্বর",
@@ -83,7 +83,38 @@ const translations = {
     notePlaceholder: "ডেলিভারি সংক্রান্ত কোনো কথা থাকলে লিখুন",
     orderTotal: "মোট পণ্যমূল্য",
     confirmOrder: "অর্ডার নিশ্চিত করুন",
-    paymentNote: "পেমেন্ট ও ডেলিভারির বিস্তারিত অর্ডার নিশ্চিত করার পর জানানো হবে।",
+    paymentNote: "অর্ডার পাঠানোর পর ইমেলে পর্যালোচনার লিংক যাবে। সিদ্ধান্ত হলে এই পাতায় কারণ/নিশ্চিতকরণ দেখা যাবে।",
+    checkoutNoticeTitle: "অর্ডারের তথ্য নিরাপদে সংরক্ষণ করা হবে",
+    checkoutNoticeText: "পেমেন্টের নম্বর এখনো যোগ করা হয়নি। ব্যবসার পক্ষ থেকে পেমেন্টের নির্দেশনা না পাওয়া পর্যন্ত টাকা পাঠাবেন না।",
+    paymentReferenceLabel: "পেমেন্টের রেফারেন্স নম্বর",
+    paymentReferencePlaceholder: "UPI লেনদেনের রেফারেন্স নম্বর",
+    paymentProofLabel: "পেমেন্টের স্ক্রিনশট",
+    paymentProofHelp: "JPG, PNG বা WebP · সর্বোচ্চ ৫ MB",
+    noFileChosen: "কোনো ফাইল বেছে নেওয়া হয়নি",
+    proofConsent: "স্ক্রিনশট দিলে সেটি নিরাপদে পর্যালোচনার জন্য সম্মতি দিচ্ছি।",
+    paymentProofError: "সঠিক JPG, PNG অথবা WebP স্ক্রিনশট দিন (সর্বোচ্চ ৫ MB)।",
+    consentError: "স্ক্রিনশট পর্যালোচনার সম্মতিতে টিক দিন।",
+    orderResultKicker: "অর্ডারের অবস্থা",
+    orderPendingTitle: "আপনার অর্ডার পর্যালোচনায় আছে",
+    orderPendingCopy: "আপনার অর্ডার সংরক্ষণ করা হয়েছে। ইমেলে পাঠানো লিংক থেকে ব্যবসা অর্ডারটি পর্যালোচনা করবে।",
+    orderReferenceLabel: "অর্ডার নম্বর",
+    orderNotificationFailed: "অর্ডারটি সংরক্ষিত, কিন্তু ইমেল পাঠানো যায়নি। আবার অর্ডার করবেন না—দয়া করে দোকানের সঙ্গে যোগাযোগ করুন।",
+    orderNotificationTest: "ইমেল সেটআপ করা নেই। রিভিউ লিংক সার্ভারের টার্মিনালে আছে।",
+    orderApprovedTitle: "আপনার অর্ডার নিশ্চিত!",
+    orderApprovedCopy: "আপনার অর্ডার গৃহীত হয়েছে। নিচে অর্ডারের বিবরণ দেখুন এবং ইনভয়েস ডাউনলোড করুন।",
+    orderRejectedTitle: "অর্ডারটি গ্রহণ করা যায়নি",
+    orderRejectedCopy: "ব্যবসার দেওয়া কারণটি নিচে দেখুন।",
+    rejectionReasonLabel: "বাতিলের কারণ",
+    orderCustomerLabel: "নাম",
+    orderPhoneLabel: "ফোন",
+    orderAddressLabel: "ঠিকানা",
+    orderItemsLabel: "পণ্য",
+    orderTotalLabel: "মোট",
+    orderPaymentReferenceLabel: "পেমেন্ট রেফারেন্স",
+    orderNoteLabel: "বিশেষ নির্দেশ",
+    openOrderStatus: "অর্ডারের অবস্থা দেখুন",
+    downloadReceipt: "অর্ডার নিশ্চিতকরণ PDF ডাউনলোড",
+    pdfDownloadError: "PDF ডাউনলোড করা যায়নি। আবার চেষ্টা করুন।",
     cartEmpty: "আপনার ব্যাগ এখনো খালি",
     cartEmptyHint: "পছন্দের স্বাদগুলো যোগ করে নিন।",
     decreaseQuantity: "{name} একটি কমান",
@@ -174,7 +205,7 @@ const translations = {
     checkout: "Continue to checkout",
     checkoutKicker: "Almost there",
     checkoutTitle: "Delivery details",
-    checkoutIntro: "Share your details to place your order. We'll get in touch by phone.",
+    checkoutIntro: "Submit your order for the business to review it through a private link sent by email.",
     nameLabel: "Your name",
     namePlaceholder: "Name for the order",
     phoneLabel: "Phone number",
@@ -186,7 +217,38 @@ const translations = {
     notePlaceholder: "Anything we should know for delivery?",
     orderTotal: "Product total",
     confirmOrder: "Place your order",
-    paymentNote: "We'll confirm payment and delivery details when we get in touch.",
+    paymentNote: "After submission, the business gets a review link by email. This page will show the decision and its reason.",
+    checkoutNoticeTitle: "Your order details will be saved securely",
+    checkoutNoticeText: "A payment number has not been added yet. Do not send money until the business shares payment instructions.",
+    paymentReferenceLabel: "Payment reference",
+    paymentReferencePlaceholder: "UPI transaction ID / reference",
+    paymentProofLabel: "Payment screenshot",
+    paymentProofHelp: "JPG, PNG, or WebP · up to 5 MB",
+    noFileChosen: "No file selected",
+    proofConsent: "If I attach a screenshot, I agree to have it reviewed privately.",
+    paymentProofError: "Choose a valid JPG, PNG, or WebP screenshot (up to 5 MB).",
+    consentError: "Please confirm you understand how the screenshot will be reviewed.",
+    orderResultKicker: "Order status",
+    orderPendingTitle: "Your order is under review",
+    orderPendingCopy: "Your order has been saved. The business will review it using the secure link sent by email.",
+    orderReferenceLabel: "Order number",
+    orderNotificationFailed: "Your order was saved, but the email could not be sent. Please contact the shop; do not submit the order again.",
+    orderNotificationTest: "Email is not configured. The review link is in the server terminal.",
+    orderApprovedTitle: "Your order is confirmed!",
+    orderApprovedCopy: "Your order has been accepted. Review the details below and download your invoice.",
+    orderRejectedTitle: "Your order could not be accepted",
+    orderRejectedCopy: "See the reason provided by the business below.",
+    rejectionReasonLabel: "Reason for rejection",
+    orderCustomerLabel: "Name",
+    orderPhoneLabel: "Phone",
+    orderAddressLabel: "Address",
+    orderItemsLabel: "Items",
+    orderTotalLabel: "Total",
+    orderPaymentReferenceLabel: "Payment reference",
+    orderNoteLabel: "Special instructions",
+    openOrderStatus: "View order status",
+    downloadReceipt: "Download order confirmation PDF",
+    pdfDownloadError: "The PDF could not be downloaded. Please try again.",
     cartEmpty: "Your bag is waiting for a treat",
     cartEmptyHint: "Add a few favourites to get started.",
     decreaseQuantity: "Remove one {name}",
@@ -221,6 +283,7 @@ const productGrid = document.querySelector("#product-grid");
 const cartCount = document.querySelector("#cart-count");
 const cartOverlay = document.querySelector("#cart-overlay");
 const checkoutModal = document.querySelector("#checkout-modal");
+const orderModal = document.querySelector("#order-modal");
 const cartItems = document.querySelector("#cart-items");
 const form = document.querySelector("#checkout-form");
 const toast = document.querySelector("#toast");
@@ -232,6 +295,8 @@ let activeFilter = "all";
 let searchTerm = "";
 let toastTimer;
 let language = loadLanguage();
+let activeOrder = null;
+let statusPollTimer = null;
 
 function loadLanguage() {
   try {
@@ -457,6 +522,8 @@ function getOrderError(result) {
     phone: "phoneError",
     address: "addressError",
     note: "noteError",
+    payment_proof: "paymentProofError",
+    proof_consent: "consentError",
     items: "badItemsError",
   };
   if (fieldKey === "items" && result.fields.items.includes("অন্তত একটি")) {
@@ -470,7 +537,7 @@ function getOrderError(result) {
 
 function setDialog(dialog, open) {
   dialog.hidden = !open;
-  document.body.classList.toggle("dialog-open", open || !cartOverlay.hidden || !checkoutModal.hidden);
+  document.body.classList.toggle("dialog-open", open || !cartOverlay.hidden || !checkoutModal.hidden || !orderModal.hidden);
   if (open) dialog.querySelector("button, input, textarea")?.focus();
 }
 
@@ -534,7 +601,125 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     setDialog(checkoutModal, false);
     setDialog(cartOverlay, false);
+    setDialog(orderModal, false);
   }
+});
+
+document.querySelector("#close-order-modal").addEventListener("click", () => setDialog(orderModal, false));
+orderModal.addEventListener("click", (event) => {
+  if (event.target === orderModal) setDialog(orderModal, false);
+});
+
+document.querySelector("#payment-proof").addEventListener("change", (event) => {
+  const file = event.target.files[0];
+  const fileName = document.querySelector("#proof-file-name");
+  const preview = document.querySelector("#proof-preview");
+  const consentLabel = document.querySelector("#proof-consent-label");
+  if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
+  if (!file) {
+    fileName.textContent = text("noFileChosen");
+    preview.hidden = true;
+    consentLabel.hidden = true;
+    return;
+  }
+  fileName.textContent = file.name;
+  consentLabel.hidden = false;
+  const objectUrl = URL.createObjectURL(file);
+  preview.src = objectUrl;
+  preview.dataset.objectUrl = objectUrl;
+  preview.hidden = false;
+});
+
+async function downloadReceipt() {
+  if (!activeOrder) return;
+  const response = await fetch(`/api/orders/${activeOrder.orderId}/receipt.pdf`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: activeOrder.receiptToken }),
+  });
+  if (!response.ok) throw new Error(text("pdfDownloadError"));
+  const url = URL.createObjectURL(await response.blob());
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `tok-jhal-order-${activeOrder.orderId.slice(0, 8)}.pdf`;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function showOrderStatus(order) {
+  activeOrder = order;
+  document.querySelector("#order-reference").textContent = order.orderId.slice(0, 8).toUpperCase();
+  document.querySelector("#open-order-status").href = `/order/${order.orderId}?lang=${language}#${order.receiptToken}`;
+  document.querySelector("#order-result-title").textContent = text("orderPendingTitle");
+  document.querySelector("#order-result-copy").textContent = text("orderPendingCopy");
+  document.querySelector("#order-details").hidden = true;
+  document.querySelector("#order-rejection-reason").hidden = true;
+  document.querySelector("#order-notification-note").textContent = order.notificationStatus === "failed"
+    ? text("orderNotificationFailed")
+    : order.notificationStatus === "console"
+      ? text("orderNotificationTest")
+      : "";
+  document.querySelector("#download-receipt").hidden = true;
+  setDialog(orderModal, true);
+  window.clearTimeout(statusPollTimer);
+  pollOrderStatus();
+}
+
+async function pollOrderStatus() {
+  if (!activeOrder) return;
+  try {
+    const response = await fetch(`/api/orders/${activeOrder.orderId}/status`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: activeOrder.receiptToken }),
+    });
+    if (!response.ok) throw new Error(`Order status request failed (${response.status}).`);
+    const order = await response.json();
+    if (order.status === "approved") {
+      document.querySelector("#order-result-title").textContent = text("orderApprovedTitle");
+      document.querySelector("#order-result-copy").textContent = text("orderApprovedCopy");
+      renderOrderDetails(order);
+      document.querySelector("#download-receipt").hidden = false;
+      return;
+    }
+    if (order.status === "payment_rejected") {
+      document.querySelector("#order-result-title").textContent = text("orderRejectedTitle");
+      document.querySelector("#order-result-copy").textContent = text("orderRejectedCopy");
+      renderOrderDetails(order);
+      const reason = document.querySelector("#order-rejection-reason");
+      reason.textContent = `${text("rejectionReasonLabel")}: ${order.rejection_reason}`;
+      reason.hidden = false;
+      return;
+    }
+  } catch (error) {
+    console.error("Could not refresh order status.", error);
+  }
+  statusPollTimer = window.setTimeout(pollOrderStatus, 7000);
+}
+
+function renderOrderDetails(order) {
+  const container = document.querySelector("#order-details");
+  const rows = [
+    [text("orderCustomerLabel"), order.name],
+    [text("orderPhoneLabel"), order.phone],
+    [text("orderAddressLabel"), order.address],
+    [text("orderItemsLabel"), order.items.map((item) => `${item.name} × ${item.quantity}`).join(", ")],
+    [text("orderTotalLabel"), formatPrice(order.total)],
+    ...(order.payment_reference ? [[text("orderPaymentReferenceLabel"), order.payment_reference]] : []),
+    ...(order.note ? [[text("orderNoteLabel"), order.note]] : []),
+  ];
+  container.replaceChildren(...rows.map(([label, value]) => {
+    const row = document.createElement("p");
+    const heading = document.createElement("strong");
+    heading.textContent = `${label}: `;
+    row.append(heading, document.createTextNode(value));
+    return row;
+  }));
+  container.hidden = false;
+}
+
+document.querySelector("#download-receipt").addEventListener("click", () => {
+  downloadReceipt().catch((error) => showToast(error.message || text("pdfDownloadError")));
 });
 
 form.addEventListener("submit", async (event) => {
@@ -542,6 +727,13 @@ form.addEventListener("submit", async (event) => {
   const errorMessage = document.querySelector("#form-error");
   const submitButton = form.querySelector('[type="submit"]');
   errorMessage.textContent = "";
+  const proofInput = document.querySelector("#payment-proof");
+  const hasProof = proofInput.files.length > 0;
+  if (hasProof && !form.elements.proof_consent.checked) {
+    errorMessage.textContent = text("consentError");
+    form.elements.proof_consent.focus();
+    return;
+  }
   submitButton.disabled = true;
   submitButton.textContent = text("submitting");
 
@@ -551,18 +743,22 @@ form.addEventListener("submit", async (event) => {
     phone: values.get("phone").trim(),
     address: values.get("address").trim(),
     note: values.get("note").trim(),
+    payment_reference: values.get("payment_reference").trim(),
+    proof_consent: values.get("proof_consent") === "on",
+    language,
     items: Object.entries(cart).map(([id, quantity]) => ({ id, quantity })),
   };
+  const submission = new FormData();
+  submission.set("order", JSON.stringify(order));
+  if (hasProof) submission.set("payment_proof", proofInput.files[0]);
 
   try {
     const response = await fetch("/api/orders", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(order),
+      body: submission,
     });
     const result = await response.json();
     if (!response.ok) {
-      const firstError = Object.values(result.fields || {})[0];
       throw new Error(getOrderError(result));
     }
 
@@ -570,9 +766,15 @@ form.addEventListener("submit", async (event) => {
     saveCart();
     form.reset();
     renderCart();
+    document.querySelector("#proof-preview").hidden = true;
+    document.querySelector("#proof-consent-label").hidden = true;
+    document.querySelector("#proof-file-name").textContent = text("noFileChosen");
     setDialog(checkoutModal, false);
-    const orderId = language === "bn" ? toBengaliDigits(result.order_id) : result.order_id;
-    showToast(text("orderSuccess", { id: orderId }));
+    showOrderStatus({
+      orderId: result.order_id,
+      receiptToken: result.receipt_token,
+      notificationStatus: result.notification_status,
+    });
   } catch (error) {
     console.error("Could not place the order.", error);
     errorMessage.textContent = error.message || text("contactError");
