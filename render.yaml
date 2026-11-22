@@ -10,10 +10,12 @@ services:
       - key: PYTHON_VERSION
         value: 3.13.3
       - key: TOKJHAL_EMAIL_MODE
-        value: resend
+        value: brevo
       - key: TOKJHAL_OWNER_EMAIL
         value: tokjhalmistico.2027@gmail.com
-      - key: TOKJHAL_RESEND_API_KEY
+      - key: TOKJHAL_BREVO_API_KEY
         sync: false
-      - key: TOKJHAL_RESEND_FROM
+      - key: TOKJHAL_BREVO_FROM_NAME
+        value: Tok Jhal Misti Co.
+      - key: TOKJHAL_BREVO_FROM_EMAIL
         sync: false

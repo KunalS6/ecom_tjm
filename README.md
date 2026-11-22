@@ -15,9 +15,9 @@ Visit [http://127.0.0.1:5000](http://127.0.0.1:5000). To stop it, press `Ctrl+C`
 
 ## Order review flow
 
-Checkout saves the customer details and order items in SQLite, then sends the business a private review link by email when email delivery is configured. The reviewer can accept the order or reject it with a required reason. The customer status page shows the decision and the full order; accepted orders can download a Bengali invoice. An optional payment screenshot can be attached and is stored privately.
+Checkout saves the customer details, including email, and order items in SQLite, then sends the business a private review link by email when email delivery is configured. The reviewer can accept the order or reject it with a required reason. The customer receives an email with the decision and a private order-status link; accepted orders can download a Bengali invoice. An optional payment screenshot can be attached and is stored privately.
 
-The payment number is intentionally not shown or configured yet. Customers are warned not to send money until the business shares payment instructions. Email defaults to a terminal log locally; Render is configured for the Resend HTTPS API. SMS requires an SMS provider and credentials; the app will send the approval or rejection reason through the configured sender. See [ENVIRONMENT.md](ENVIRONMENT.md) for setup, dependencies, and limitations.
+The payment number is intentionally not shown or configured yet. Customers are warned not to send money until the business shares payment instructions. Email defaults to a terminal log locally; Render is configured for the Brevo HTTPS API. SMS requires an SMS provider and credentials; the app will send the approval or rejection reason through the configured sender. See [ENVIRONMENT.md](ENVIRONMENT.md) for setup, dependencies, and limitations.
 
 This is a **local prototype, not ready for real customer data or payments**. Configure email, SMS, secure hosting, persistent storage, backups, and the real payment destination before launch.
 
@@ -25,6 +25,6 @@ The sample product prices are placeholders; set actual prices and pack sizes bef
 
 ## Deploy a preview on Render
 
-The repository includes a Render Blueprint in `render.yaml`. Connect this repository in Render and create a Blueprint; Render will install the requirements and start Flask with Gunicorn. Set `TOKJHAL_RESEND_API_KEY` and `TOKJHAL_RESEND_FROM` in the Render dashboard, using a sender address verified with Resend. See [ENVIRONMENT.md](ENVIRONMENT.md) for email setup and persistent storage requirements.
+The repository includes a Render Blueprint in `render.yaml`. Connect this repository in Render and create a Blueprint; Render will install the requirements and start Flask with Gunicorn. Set `TOKJHAL_BREVO_API_KEY` and `TOKJHAL_BREVO_FROM_EMAIL` in the Render dashboard using a sender address verified with Brevo. See [ENVIRONMENT.md](ENVIRONMENT.md) for email setup and persistent storage requirements.
 
 Render's free service uses an ephemeral filesystem and may sleep when idle. Treat this deployment as a disposable preview only: its SQLite orders and uploaded screenshots can be lost on restart, sleep, or redeploy. Do not accept real customer orders or payment proofs on this setup.

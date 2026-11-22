@@ -63,40 +63,42 @@ SQLite, JSON, email composition, token generation, and browser interactions use 
 
 Use fictional customer information during local testing. The local development server, SQLite database, and local screenshot storage are not a secure production service.
 
-## Email delivery for order review
+## Email delivery for order review and customer decisions
 
-New-order review email is sent to `tokjhalmistico.2027@gmail.com`. The message includes the order details and a secure link to accept or reject the order. The review link uses `TOKJHAL_PUBLIC_BASE_URL`; on Render the app automatically uses Render's `RENDER_EXTERNAL_URL`.
+Checkout asks the customer for an email address. New-order review email goes to `TOKJHAL_OWNER_EMAIL` and includes a private link to approve or reject the order. When the owner decides, the app emails the customer the decision and a private link to order status. Review links expire after 48 hours; customer status links expire after 30 days.
 
-Render deployments use the Resend HTTPS API because the Render service could not establish a connection to Gmail SMTP. Create a Resend account and API key, then configure:
+Render is configured to send through the Brevo HTTPS API because this Render service cannot connect to Gmail SMTP. Create a free Brevo account, register and verify a sender address, then create an API key. Configure:
 
-- `TOKJHAL_EMAIL_MODE`: `resend`
-- `TOKJHAL_RESEND_API_KEY`: the Resend API key (keep it secret)
-- `TOKJHAL_RESEND_FROM`: a sender address authorized by Resend
+- `TOKJHAL_EMAIL_MODE`: `brevo`
+- `TOKJHAL_BREVO_API_KEY`: the Brevo API key (keep it secret)
+- `TOKJHAL_BREVO_FROM_NAME`: sender display name (default `Tok Jhal Misti Co.`)
+- `TOKJHAL_BREVO_FROM_EMAIL`: the exact sender address verified in Brevo
 - `TOKJHAL_OWNER_EMAIL`: the inbox that receives review links
 
-For production recipients, verify a domain with Resend and use a sender at that domain. Do not put credentials in source code, `render.yaml`, or GitHub. SMTP remains available for local environments that can reach their SMTP host.
+Brevo may allow you to verify your Gmail address as a sender by sending it a confirmation code; if it requires domain authentication, follow its setup instructions. Do not put credentials in source code, `render.yaml`, or GitHub. Resend and SMTP remain available as optional modes, but Gmail SMTP failed from this Render service with a network error.
 
 For local testing, set these variables in the same PowerShell terminal before starting Flask:
 
 ```powershell
-$env:TOKJHAL_EMAIL_MODE = "resend"
+$env:TOKJHAL_EMAIL_MODE = "brevo"
 $env:TOKJHAL_OWNER_EMAIL = "tokjhalmistico.2027@gmail.com"
-$env:TOKJHAL_RESEND_API_KEY = "your-resend-api-key"
-$env:TOKJHAL_RESEND_FROM = "Tok Jhal Misti <orders@your-verified-domain.example>"
+$env:TOKJHAL_BREVO_API_KEY = "your-brevo-api-key"
+$env:TOKJHAL_BREVO_FROM_NAME = "Tok Jhal Misti Co."
+$env:TOKJHAL_BREVO_FROM_EMAIL = "your-verified-sender@example.com"
 $env:TOKJHAL_PUBLIC_BASE_URL = "http://127.0.0.1:5000"
 python server.py
 ```
 
 ### Render setup
 
-The root `render.yaml` defines the Flask web service and sets Resend email mode and the business recipient. It declares the Resend API key and sender as dashboard-provided values (`sync: false`), so no credentials are stored in the repository.
+The root `render.yaml` defines the Flask web service and sets Brevo mode and the business recipient. It declares the Brevo API key and sender address as dashboard-provided values (`sync: false`), so no credentials are stored in the repository.
 
-1. Create a Resend account, verify a sending domain, and create an API key.
-2. In Render's service **Environment** settings, set `TOKJHAL_RESEND_API_KEY` and `TOKJHAL_RESEND_FROM` using the key and verified sender address.
-3. Deploy or trigger a redeploy. Review Render logs for email API errors.
-4. Place a test order using your own test details. Confirm `notification_status` is `sent` and check the business inbox's spam folder. The email's review link opens the private accept/reject page.
+1. In Brevo, add and verify the sender email address, then create an API key.
+2. In Render's service **Environment** settings, set `TOKJHAL_EMAIL_MODE=brevo`, `TOKJHAL_BREVO_API_KEY`, and `TOKJHAL_BREVO_FROM_EMAIL`. Keep `TOKJHAL_OWNER_EMAIL` set to the business inbox.
+3. Save/redeploy. Review Render logs for Brevo API errors.
+4. Place a test order with an email address you can access. Confirm the owner receives the review email. Approve or reject the test order and confirm the customer receives a decision email. Check spam folders and Brevo's transactional email logs if needed.
 
-Never paste API keys into chat, source code, screenshots, or GitHub. If a key is exposed, revoke it and create a replacement. Render automatically supplies its public URL when creating review links.
+Never paste API keys into chat, source code, screenshots, or GitHub. If a key is exposed, revoke it and create a replacement. Render automatically supplies its public URL when creating order links.
 
 ## Persistent order and payment-proof storage on Render
 
