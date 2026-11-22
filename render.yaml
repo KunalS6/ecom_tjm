@@ -10,12 +10,14 @@ services:
       - key: PYTHON_VERSION
         value: 3.13.3
       - key: TOKJHAL_EMAIL_MODE
-        value: brevo
+        value: smtp
       - key: TOKJHAL_OWNER_EMAIL
         value: tokjhalmistico.2027@gmail.com
-      - key: TOKJHAL_BREVO_API_KEY
+      - key: TOKJHAL_SMTP_HOST
+        value: smtp.gmail.com
+      - key: TOKJHAL_SMTP_PORT
+        value: 587
+      - key: TOKJHAL_SMTP_USERNAME
         sync: false
-      - key: TOKJHAL_BREVO_FROM_NAME
-        value: Tok Jhal Misti Co.
-      - key: TOKJHAL_BREVO_FROM_EMAIL
+      - key: TOKJHAL_SMTP_PASSWORD
         sync: false

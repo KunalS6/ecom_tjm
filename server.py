@@ -8,8 +8,6 @@ import secrets
 import smtplib
 import sqlite3
 import uuid
-import urllib.error
-import urllib.request
 from datetime import datetime, timedelta, timezone
 from contextlib import closing
 from email.message import EmailMessage
@@ -49,8 +47,8 @@ PRODUCT_BY_ID = {product["id"]: product for product in PRODUCTS}
 
 def create_app(database_path: Path | None = None, private_storage_path: Path | None = None) -> Flask:
     app = Flask(__name__, template_folder=".", static_folder=None)
-    app.config["DATABASE"] = str(database_path or os.environ.get("TOKJHAL_DATABASE", DATABASE))
-    app.config["PRIVATE_STORAGE"] = str(private_storage_path or os.environ.get("TOKJHAL_PRIVATE_STORAGE", PRIVATE_STORAGE))
+    app.config["DATABASE"] = str(database_path or DATABASE)
+    app.config["PRIVATE_STORAGE"] = str(private_storage_path or PRIVATE_STORAGE)
     app.config["MAX_CONTENT_LENGTH"] = MAX_PROOF_BYTES + 64 * 1024
     app.config["EMAIL_MODE"] = os.environ.get("TOKJHAL_EMAIL_MODE", "console").lower()
     app.config["OWNER_EMAIL"] = os.environ.get("TOKJHAL_OWNER_EMAIL", DEFAULT_OWNER_EMAIL)
@@ -63,11 +61,6 @@ def create_app(database_path: Path | None = None, private_storage_path: Path | N
     app.config["SMTP_PORT"] = int(os.environ.get("TOKJHAL_SMTP_PORT", "587"))
     app.config["SMTP_USERNAME"] = os.environ.get("TOKJHAL_SMTP_USERNAME", "")
     app.config["SMTP_PASSWORD"] = os.environ.get("TOKJHAL_SMTP_PASSWORD", "")
-    app.config["RESEND_API_KEY"] = os.environ.get("TOKJHAL_RESEND_API_KEY", "")
-    app.config["RESEND_FROM"] = os.environ.get("TOKJHAL_RESEND_FROM", "")
-    app.config["BREVO_API_KEY"] = os.environ.get("TOKJHAL_BREVO_API_KEY", "")
-    app.config["BREVO_FROM_NAME"] = os.environ.get("TOKJHAL_BREVO_FROM_NAME", "Tok Jhal Misti Co.")
-    app.config["BREVO_FROM_EMAIL"] = os.environ.get("TOKJHAL_BREVO_FROM_EMAIL", "")
     initialize_database(app.config["DATABASE"])
     Path(app.config["PRIVATE_STORAGE"], "payment-proofs").mkdir(parents=True, exist_ok=True)
 
@@ -138,7 +131,6 @@ def create_app(database_path: Path | None = None, private_storage_path: Path | N
         name = payload.get("name")
         phone = payload.get("phone")
         phone_number = re.sub(r"[\s().-]", "", phone) if isinstance(phone, str) else ""
-        customer_email = payload.get("email")
         address = payload.get("address")
         note = payload.get("note", "")
         payment_reference = payload.get("payment_reference", "")
@@ -150,12 +142,6 @@ def create_app(database_path: Path | None = None, private_storage_path: Path | N
             errors["name"] = "নাম ২ থেকে ৮০ অক্ষরের মধ্যে লিখুন।"
         if not re.fullmatch(r"\+?\d{7,15}", phone_number):
             errors["phone"] = "সঠিক ফোন নম্বর লিখুন (৭–১৫টি সংখ্যা)।"
-        if (
-            not isinstance(customer_email, str)
-            or len(customer_email.strip()) > 254
-            or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", customer_email.strip())
-        ):
-            errors["email"] = "সঠিক ইমেল ঠিকানা লিখুন।"
         if not isinstance(address, str) or not 8 <= len(address.strip()) <= 300:
             errors["address"] = "সম্পূর্ণ ঠিকানা লিখুন (কমপক্ষে ৮ অক্ষর)।"
         if not isinstance(note, str) or len(note) > 500:
@@ -224,10 +210,10 @@ def create_app(database_path: Path | None = None, private_storage_path: Path | N
                 INSERT INTO orders (
                     public_id, customer_name, phone, delivery_address, note, items, total, status,
                     payment_proof_path, review_token_hash, review_expires_at, receipt_token_hash,
-                    receipt_token_expires_at, payment_reference, customer_language, customer_email,
-                    notification_status, customer_email_status, sms_status
+                    receipt_token_expires_at, payment_reference, customer_language,
+                    notification_status, sms_status
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'awaiting_review', ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 'not_sent', 'not_configured')
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'awaiting_review', ?, ?, ?, ?, ?, ?, ?, 'pending', 'not_configured')
                 """,
                 (
                     public_id,
@@ -244,7 +230,6 @@ def create_app(database_path: Path | None = None, private_storage_path: Path | N
                     receipt_expires_at,
                     payment_reference.strip(),
                     "en" if payload.get("language") == "en" else "bn",
-                    customer_email.strip(),
                 ),
             )
             order_id = cursor.lastrowid
@@ -292,7 +277,6 @@ def create_app(database_path: Path | None = None, private_storage_path: Path | N
             return jsonify(
                 order_id=order["public_id"],
                 name=order["customer_name"],
-                email=order["customer_email"],
                 phone=order["phone"],
                 address=order["delivery_address"],
                 note=order["note"],
@@ -306,10 +290,6 @@ def create_app(database_path: Path | None = None, private_storage_path: Path | N
             return jsonify(error="Review action is invalid."), 400
 
         status = "approved" if action == "approve" else "payment_rejected"
-        customer_email_token = secrets.token_urlsafe(32)
-        customer_email_token_expires_at = (
-            datetime.now(timezone.utc) + RECEIPT_TOKEN_TTL
-        ).isoformat()
         rejection_reason = ""
         if status == "payment_rejected":
             rejection_reason = payload.get("reason", "").strip() if isinstance(payload.get("reason"), str) else ""
@@ -321,9 +301,7 @@ def create_app(database_path: Path | None = None, private_storage_path: Path | N
                 UPDATE orders
                 SET status = ?, rejection_reason = ?,
                     approved_at = CASE WHEN ? = 'approved' THEN ? ELSE approved_at END,
-                    review_token_hash = NULL,
-                    customer_email_token_hash = ?,
-                    customer_email_token_expires_at = ?
+                    review_token_hash = NULL
                 WHERE id = ? AND status = 'awaiting_review' AND review_token_hash = ?
                 """,
                 (
@@ -331,8 +309,6 @@ def create_app(database_path: Path | None = None, private_storage_path: Path | N
                     rejection_reason,
                     status,
                     datetime.now(timezone.utc).isoformat(),
-                    token_hash(customer_email_token),
-                    customer_email_token_expires_at,
                     order["id"],
                     token_hash(payload["token"]),
                 ),
@@ -343,25 +319,15 @@ def create_app(database_path: Path | None = None, private_storage_path: Path | N
 
         reviewed_order = dict(order)
         reviewed_order["customer_language"] = order["customer_language"]
-        reviewed_order["customer_email_token"] = customer_email_token
-        customer_email_status = send_customer_decision_notification(
-            app, reviewed_order, status, rejection_reason
-        )
         sms_status = send_order_sms(app, reviewed_order, status, rejection_reason)
         with closing(sqlite3.connect(app.config["DATABASE"])) as connection:
             connection.execute(
-                "UPDATE orders SET customer_email_status = ?, sms_status = ? WHERE id = ?",
-                (customer_email_status, sms_status, order["id"]),
+                "UPDATE orders SET sms_status = ? WHERE id = ?",
+                (sms_status, order["id"]),
             )
             connection.commit()
 
-        return jsonify(
-            status=status,
-            customer_email_status=customer_email_status,
-            sms_status=sms_status,
-            order_id=public_id,
-            rejection_reason=rejection_reason,
-        )
+        return jsonify(status=status, sms_status=sms_status, order_id=public_id, rejection_reason=rejection_reason)
 
     @app.post("/api/orders/<public_id>/status")
     def order_status(public_id: str):
@@ -383,7 +349,6 @@ def create_app(database_path: Path | None = None, private_storage_path: Path | N
             rejection_reason=order["rejection_reason"],
             created_at=order["created_at"],
             notification_status=order["notification_status"],
-            customer_email_status=order["customer_email_status"],
             sms_status=order["sms_status"],
         )
 
@@ -431,27 +396,16 @@ def authorized_order(app: Flask, public_id: str, token: Any, token_column: str):
     with closing(sqlite3.connect(app.config["DATABASE"])) as connection:
         connection.row_factory = sqlite3.Row
         order = connection.execute("SELECT * FROM orders WHERE public_id = ?", (public_id,)).fetchone()
-    if order is None:
+    if order is None or not order[token_column] or not secrets.compare_digest(order[token_column], token_hash(token)):
         return None, (jsonify(error="This link is invalid or has expired."), 404)
-    if token_column == "receipt_token_hash":
-        token_options = (
-            ("receipt_token_hash", "receipt_token_expires_at"),
-            ("customer_email_token_hash", "customer_email_token_expires_at"),
-        )
-    else:
-        token_options = ((token_column, "review_expires_at"),)
-    token_digest = token_hash(token)
-    matching_expiry = None
-    for hash_column, expiry_column in token_options:
-        stored_hash = order[hash_column]
-        if stored_hash and secrets.compare_digest(stored_hash, token_digest):
-            matching_expiry = order[expiry_column]
-            break
-    if matching_expiry is None:
-        return None, (jsonify(error="This link is invalid or has expired."), 404)
-    if datetime.fromisoformat(matching_expiry) <= datetime.now(timezone.utc):
-        error = "This review link has expired." if token_column == "review_token_hash" else "This order link has expired."
-        return None, (jsonify(error=error), 410)
+    if token_column == "review_token_hash":
+        expiry = datetime.fromisoformat(order["review_expires_at"])
+        if expiry <= datetime.now(timezone.utc):
+            return None, (jsonify(error="This review link has expired."), 410)
+    elif token_column == "receipt_token_hash":
+        expiry = datetime.fromisoformat(order["receipt_token_expires_at"])
+        if expiry <= datetime.now(timezone.utc):
+            return None, (jsonify(error="This order link has expired."), 410)
     return order, None
 
 
@@ -486,6 +440,7 @@ def save_payment_screenshot(upload, private_storage: Path) -> str:
 
 
 def send_review_notification(app: Flask, order: sqlite3.Row, review_url: str) -> str:
+    language = order["customer_language"]
     email_sender = app.config.get("REVIEW_EMAIL_SENDER")
     if email_sender is not None:
         try:
@@ -497,12 +452,25 @@ def send_review_notification(app: Flask, order: sqlite3.Row, review_url: str) ->
     if app.config["EMAIL_MODE"] == "console":
         app.logger.warning("NEW ORDER %s — review link (not emailed): %s", order["public_id"], review_url)
         return "console"
+    if app.config["EMAIL_MODE"] != "smtp":
+        app.logger.error("Unsupported email mode: %s", app.config["EMAIL_MODE"])
+        return "failed"
+    username = app.config["SMTP_USERNAME"]
+    password = app.config["SMTP_PASSWORD"]
+    if not username or not password:
+        app.logger.error("SMTP mode is enabled but SMTP username/password are not configured.")
+        return "failed"
+
     item_lines = [
         f"- {item['name']} × {item['quantity']} — ₹{item['line_total']}"
         for item in json.loads(order["items"])
     ]
-    if order["customer_language"] == "en":
-        text_body = (
+    message = EmailMessage()
+    message["Subject"] = f"New order to review — {order['public_id']}"
+    message["From"] = username
+    message["To"] = app.config["OWNER_EMAIL"]
+    if language == "en":
+        message.set_content(
             f"New order {order['public_id']}\n"
             f"Customer: {order['customer_name']}\nPhone: {order['phone']}\n"
             f"Address: {order['delivery_address']}\n\n"
@@ -511,7 +479,7 @@ def send_review_notification(app: Flask, order: sqlite3.Row, review_url: str) ->
             "The optional screenshot is available only through this private review page."
         )
     else:
-        text_body = (
+        message.set_content(
             f"নতুন অর্ডার: {order['public_id']}\n"
             f"নাম: {order['customer_name']}\nফোন: {order['phone']}\n"
             f"ঠিকানা: {order['delivery_address']}\n\n"
@@ -519,220 +487,29 @@ def send_review_notification(app: Flask, order: sqlite3.Row, review_url: str) ->
             + f"\n\nমোট: ₹{order['total']}\nঅর্ডারটি পর্যালোচনা ও গ্রহণ/বাতিল করতে: {review_url}\n"
             "ঐচ্ছিক স্ক্রিনশটটি শুধু এই ব্যক্তিগত রিভিউ লিংকে দেখা যাবে।"
         )
-    html_body = f"""\
+    message.add_alternative(
+        f"""\
         <html>
           <body style="font-family:Arial,sans-serif;color:#263b2b">
             <h1>New order to review</h1>
             <p><strong>Order:</strong> {html.escape(order['public_id'])}</p>
-            <p><strong>Customer:</strong> {html.escape(order['customer_name'])} · {html.escape(order['phone'])} · {html.escape(order['customer_email'])}</p>
+            <p><strong>Customer:</strong> {html.escape(order['customer_name'])} · {html.escape(order['phone'])}</p>
             <p><strong>Address:</strong> {html.escape(order['delivery_address'])}</p>
             <p><strong>Total:</strong> ₹{order['total']}</p>
             <p><a href="{html.escape(review_url, quote=True)}" style="display:inline-block;padding:12px 20px;background:#d94b32;color:#fff;text-decoration:none;border-radius:8px">Review and accept or reject this order</a></p>
             <p>The customer will see your decision and any rejection reason on their order status page.</p>
           </body>
         </html>
-        """
-    return send_email_via_provider(
-        app,
-        recipient=app.config["OWNER_EMAIL"],
-        subject=f"New order to review — {order['public_id']}",
-        text_body=text_body,
-        html_body=html_body,
-        order_id=order["public_id"],
-        message_kind="owner review",
+        """,
+        subtype="html",
     )
-
-
-def send_customer_decision_notification(
-    app: Flask,
-    order: dict[str, Any],
-    status: str,
-    rejection_reason: str,
-) -> str:
-    email_sender = app.config.get("CUSTOMER_EMAIL_SENDER")
-    receipt_url = (
-        f"{app.config['PUBLIC_BASE_URL']}/order/{order['public_id']}"
-        f"?lang={order['customer_language']}#{order['customer_email_token']}"
-    )
-    if email_sender is not None:
-        try:
-            email_sender(order, status, rejection_reason, receipt_url)
-        except (OSError, smtplib.SMTPException) as error:
-            app.logger.exception(
-                "Could not send order decision email for %s.",
-                order["public_id"],
-                exc_info=error,
-            )
-            return "failed"
-        return "sent"
-    if app.config["EMAIL_MODE"] == "console":
-        app.logger.warning(
-            "Order decision email is not configured for order %s.",
-            order["public_id"],
-        )
-        return "console"
-
-    approved = status == "approved"
-    if order["customer_language"] == "en":
-        subject = (
-            f"Your order {order['public_id'][:8].upper()} is confirmed"
-            if approved
-            else f"Update about your order {order['public_id'][:8].upper()}"
-        )
-        decision = (
-            "Your order has been approved."
-            if approved
-            else f"Your order could not be accepted. Reason: {rejection_reason}"
-        )
-        text_body = (
-            f"Hello {order['customer_name']},\n\n{decision}\n"
-            f"View your order details: {receipt_url}\n"
-        )
-        html_decision = (
-            "<p>Your order has been approved.</p>"
-            if approved
-            else f"<p>Your order could not be accepted.</p><p><strong>Reason:</strong> {html.escape(rejection_reason)}</p>"
-        )
-        heading = "Your order is confirmed" if approved else "An update about your order"
-    else:
-        subject = (
-            f"আপনার অর্ডার {order['public_id'][:8].upper()} নিশ্চিত"
-            if approved
-            else f"আপনার অর্ডার {order['public_id'][:8].upper()} সম্পর্কে আপডেট"
-        )
-        decision = (
-            "আপনার অর্ডারটি গ্রহণ করা হয়েছে।"
-            if approved
-            else f"আপনার অর্ডারটি গ্রহণ করা যায়নি। কারণ: {rejection_reason}"
-        )
-        text_body = (
-            f"প্রিয় {order['customer_name']},\n\n{decision}\n"
-            f"অর্ডারের বিস্তারিত দেখুন: {receipt_url}\n"
-        )
-        html_decision = (
-            "<p>আপনার অর্ডারটি গ্রহণ করা হয়েছে।</p>"
-            if approved
-            else f"<p>আপনার অর্ডারটি গ্রহণ করা যায়নি।</p><p><strong>কারণ:</strong> {html.escape(rejection_reason)}</p>"
-        )
-        heading = "আপনার অর্ডার নিশ্চিত" if approved else "আপনার অর্ডার সম্পর্কে আপডেট"
-    html_body = f"""\
-        <html>
-          <body style="font-family:Arial,sans-serif;color:#263b2b">
-            <h1>{heading}</h1>
-            <p>{html.escape(order['customer_name'])},</p>
-            {html_decision}
-            <p><a href="{html.escape(receipt_url, quote=True)}">View your order</a></p>
-          </body>
-        </html>
-        """
-    return send_email_via_provider(
-        app,
-        recipient=order["customer_email"],
-        subject=subject,
-        text_body=text_body,
-        html_body=html_body,
-        order_id=order["public_id"],
-        message_kind="customer decision",
-    )
-
-
-def send_email_via_provider(
-    app: Flask,
-    recipient: str,
-    subject: str,
-    text_body: str,
-    html_body: str,
-    order_id: str,
-    message_kind: str,
-) -> str:
-    email_mode = app.config["EMAIL_MODE"]
-    if email_mode == "brevo":
-        if not app.config["BREVO_API_KEY"] or not app.config["BREVO_FROM_EMAIL"]:
-            app.logger.error("Brevo email mode is enabled but API key/from address are not configured.")
-            return "failed"
-    elif email_mode == "resend":
-        if not app.config["RESEND_API_KEY"] or not app.config["RESEND_FROM"]:
-            app.logger.error("Resend email mode is enabled but API key/from address are not configured.")
-            return "failed"
-    elif email_mode == "smtp":
-        if not app.config["SMTP_USERNAME"] or not app.config["SMTP_PASSWORD"]:
-            app.logger.error("SMTP mode is enabled but SMTP username/password are not configured.")
-            return "failed"
-    else:
-        app.logger.error("Unsupported email mode: %s", email_mode)
-        return "failed"
-
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["To"] = recipient
-    message.set_content(text_body)
-    message.add_alternative(html_body, subtype="html")
     try:
-        if email_mode == "resend":
-            payload = {
-                "from": app.config["RESEND_FROM"],
-                "to": [recipient],
-                "subject": message["Subject"],
-                "text": message.get_body(preferencelist=("plain",)).get_content(),
-                "html": message.get_body(preferencelist=("html",)).get_content(),
-            }
-            api_request = urllib.request.Request(
-                "https://api.resend.com/emails",
-                data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-                headers={
-                    "Authorization": f"Bearer {app.config['RESEND_API_KEY']}",
-                    "Content-Type": "application/json",
-                    "Idempotency-Key": f"{order_id}-{message_kind.replace(' ', '-')}",
-                },
-                method="POST",
-            )
-            with urllib.request.urlopen(api_request, timeout=15):
-                pass
-        elif email_mode == "brevo":
-            payload = {
-                "sender": {
-                    "name": app.config["BREVO_FROM_NAME"],
-                    "email": app.config["BREVO_FROM_EMAIL"],
-                },
-                "to": [{"email": recipient}],
-                "subject": subject,
-                "textContent": text_body,
-                "htmlContent": html_body,
-            }
-            api_request = urllib.request.Request(
-                "https://api.brevo.com/v3/smtp/email",
-                data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-                headers={
-                    "api-key": app.config["BREVO_API_KEY"],
-                    "accept": "application/json",
-                    "content-type": "application/json",
-                },
-                method="POST",
-            )
-            with urllib.request.urlopen(api_request, timeout=15):
-                pass
-        else:
-            message["From"] = app.config["SMTP_USERNAME"]
-            with smtplib.SMTP(app.config["SMTP_HOST"], app.config["SMTP_PORT"], timeout=15) as smtp:
-                smtp.starttls()
-                smtp.login(app.config["SMTP_USERNAME"], app.config["SMTP_PASSWORD"])
-                smtp.send_message(message)
-    except urllib.error.HTTPError as error:
-        details = error.read().decode("utf-8", errors="replace")
-        app.logger.error(
-            "Email API rejected order %s with HTTP %s: %s",
-            order_id,
-            error.code,
-            details,
-        )
-        return "failed"
-    except (OSError, urllib.error.URLError, smtplib.SMTPException) as error:
-        app.logger.exception(
-            "Could not send %s email for order %s.",
-            message_kind,
-            order_id,
-            exc_info=error,
-        )
+        with smtplib.SMTP(app.config["SMTP_HOST"], app.config["SMTP_PORT"], timeout=15) as smtp:
+            smtp.starttls()
+            smtp.login(username, password)
+            smtp.send_message(message)
+    except (OSError, smtplib.SMTPException) as error:
+        app.logger.exception("Could not send order review email for %s.", order["public_id"], exc_info=error)
         return "failed"
     return "sent"
 
@@ -841,11 +618,7 @@ def initialize_database(database_path: str) -> None:
                 receipt_token_expires_at TEXT,
                 payment_reference TEXT NOT NULL DEFAULT '',
                 customer_language TEXT NOT NULL DEFAULT 'bn',
-                customer_email TEXT NOT NULL DEFAULT '',
                 notification_status TEXT NOT NULL DEFAULT 'not_sent',
-                customer_email_status TEXT NOT NULL DEFAULT 'not_sent',
-                customer_email_token_hash TEXT,
-                customer_email_token_expires_at TEXT,
                 sms_status TEXT NOT NULL DEFAULT 'not_configured',
                 approved_at TEXT,
                 rejection_reason TEXT NOT NULL DEFAULT ''
@@ -865,11 +638,7 @@ def initialize_database(database_path: str) -> None:
             "receipt_token_expires_at": "TEXT",
             "payment_reference": "TEXT NOT NULL DEFAULT ''",
             "customer_language": "TEXT NOT NULL DEFAULT 'bn'",
-            "customer_email": "TEXT NOT NULL DEFAULT ''",
             "notification_status": "TEXT NOT NULL DEFAULT 'not_sent'",
-            "customer_email_status": "TEXT NOT NULL DEFAULT 'not_sent'",
-            "customer_email_token_hash": "TEXT",
-            "customer_email_token_expires_at": "TEXT",
             "sms_status": "TEXT NOT NULL DEFAULT 'not_configured'",
             "approved_at": "TEXT",
             "rejection_reason": "TEXT NOT NULL DEFAULT ''",

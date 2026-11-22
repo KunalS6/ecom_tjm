@@ -2,7 +2,6 @@ import json
 import sqlite3
 import tempfile
 import unittest
-import urllib.error
 from contextlib import closing
 from io import BytesIO
 from pathlib import Path
@@ -32,7 +31,6 @@ class StorefrontTests(unittest.TestCase):
         if image is None:
             Image.new("RGB", (24, 24), color=(206, 75, 43)).save(image_buffer, format="PNG")
             image = image_buffer.getvalue()
-        payload.setdefault("email", "customer@example.com")
         payload.setdefault("proof_consent", True)
         return self.client.post(
             "/api/orders",
@@ -96,43 +94,23 @@ class StorefrontTests(unittest.TestCase):
             "https://tok-jhal-misti.onrender.com",
         )
 
-    def test_persistent_storage_environment_paths_are_used(self):
-        database_path = Path(self.temp_directory.name) / "persistent" / "orders.sqlite3"
-        private_storage_path = Path(self.temp_directory.name) / "persistent" / "private"
-        with patch.dict(
-            "os.environ",
-            {
-                "TOKJHAL_DATABASE": str(database_path),
-                "TOKJHAL_PRIVATE_STORAGE": str(private_storage_path),
-            },
-        ):
-            app = create_app()
-
-        self.assertEqual(app.config["DATABASE"], str(database_path))
-        self.assertEqual(app.config["PRIVATE_STORAGE"], str(private_storage_path))
-        self.assertTrue(database_path.is_file())
-        self.assertTrue((private_storage_path / "payment-proofs").is_dir())
-
     def test_order_can_be_placed_without_payment_number_or_screenshot(self):
         response = self.client.post(
             "/api/orders",
             json={
                 "name": "মিতা দাস",
-                "email": "customer@example.com",
                 "phone": "9876543210",
                 "address": "১২, রবীন্দ্র সরণি, কলকাতা",
                 "items": [{"id": "aamer-achar", "quantity": 1}],
-                "language": "en",
             },
         )
         self.assertEqual(response.status_code, 201)
         with closing(sqlite3.connect(self.app.config["DATABASE"])) as connection:
-            proof_path, customer_email = connection.execute(
-                "SELECT payment_proof_path, customer_email FROM orders WHERE public_id = ?",
+            proof_path = connection.execute(
+                "SELECT payment_proof_path FROM orders WHERE public_id = ?",
                 (response.get_json()["order_id"],),
-            ).fetchone()
+            ).fetchone()[0]
         self.assertIsNone(proof_path)
-        self.assertEqual(customer_email, "customer@example.com")
 
     @patch("server.smtplib.SMTP")
     def test_smtp_order_notification_targets_business_and_contains_review_link(self, smtp_factory):
@@ -148,7 +126,6 @@ class StorefrontTests(unittest.TestCase):
             "/api/orders",
             json={
                 "name": "মিতা দাস",
-                "email": "customer@example.com",
                 "phone": "9876543210",
                 "address": "১২, রবীন্দ্র সরণি, কলকাতা",
                 "items": [{"id": "aamer-achar", "quantity": 1}],
@@ -169,189 +146,6 @@ class StorefrontTests(unittest.TestCase):
             "Review and accept or reject this order",
             message.get_body(preferencelist=("html",)).get_content(),
         )
-
-    @patch("server.urllib.request.urlopen")
-    def test_resend_order_notification_targets_business_and_contains_review_link(self, urlopen):
-        self.app.config.pop("REVIEW_EMAIL_SENDER")
-        self.app.config.update(
-            EMAIL_MODE="resend",
-            OWNER_EMAIL="tokjhalmistico.2027@gmail.com",
-            PUBLIC_BASE_URL="https://tok-jhal-misti.example",
-            RESEND_API_KEY="test-only-api-key",
-            RESEND_FROM="Tok Jhal Misti <orders@example.com>",
-        )
-        response = self.client.post(
-            "/api/orders",
-            json={
-                "name": "মিতা দাস",
-                "email": "customer@example.com",
-                "phone": "9876543210",
-                "address": "১২, রবীন্দ্র সরণি, কলকাতা",
-                "items": [{"id": "aamer-achar", "quantity": 1}],
-            },
-        )
-
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.get_json()["notification_status"], "sent")
-        api_request = urlopen.call_args.args[0]
-        self.assertEqual(api_request.full_url, "https://api.resend.com/emails")
-        self.assertEqual(api_request.get_header("Authorization"), "Bearer test-only-api-key")
-        payload = json.loads(api_request.data)
-        self.assertEqual(payload["to"], ["tokjhalmistico.2027@gmail.com"])
-        self.assertEqual(payload["from"], "Tok Jhal Misti <orders@example.com>")
-        self.assertIn("https://tok-jhal-misti.example/review/", payload["text"])
-        self.assertIn("Review and accept or reject this order", payload["html"])
-
-    @patch("server.urllib.request.urlopen")
-    def test_resend_api_error_marks_order_notification_failed(self, urlopen):
-        self.app.config.pop("REVIEW_EMAIL_SENDER")
-        self.app.config.update(
-            EMAIL_MODE="resend",
-            RESEND_API_KEY="test-only-api-key",
-            RESEND_FROM="Tok Jhal Misti <orders@example.com>",
-        )
-        urlopen.side_effect = urllib.error.HTTPError(
-            "https://api.resend.com/emails",
-            401,
-            "Unauthorized",
-            {},
-            None,
-        )
-        response = self.client.post(
-            "/api/orders",
-            json={
-                "name": "মিতা দাস",
-                "email": "customer@example.com",
-                "phone": "9876543210",
-                "address": "১২, রবীন্দ্র সরণি, কলকাতা",
-                "items": [{"id": "aamer-achar", "quantity": 1}],
-            },
-        )
-
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.get_json()["notification_status"], "failed")
-
-    @patch("server.urllib.request.urlopen")
-    def test_brevo_sends_owner_review_and_customer_approval_emails(self, urlopen):
-        self.app.config.pop("REVIEW_EMAIL_SENDER")
-        self.app.config.update(
-            EMAIL_MODE="brevo",
-            OWNER_EMAIL="owner@example.com",
-            PUBLIC_BASE_URL="https://tok-jhal-misti.example",
-            BREVO_API_KEY="test-only-brevo-key",
-            BREVO_FROM_NAME="Tok Jhal Misti Co.",
-            BREVO_FROM_EMAIL="orders@example.com",
-        )
-        response = self.client.post(
-            "/api/orders",
-            json={
-                "name": "মিতা দাস",
-                "email": "customer@example.com",
-                "phone": "9876543210",
-                "address": "১২, রবীন্দ্র সরণি, কলকাতা",
-                "items": [{"id": "aamer-achar", "quantity": 1}],
-                "language": "en",
-            },
-        )
-        self.assertEqual(response.status_code, 201)
-        order = response.get_json()
-        self.assertEqual(order["notification_status"], "sent")
-        owner_request = urlopen.call_args_list[0].args[0]
-        self.assertEqual(owner_request.full_url, "https://api.brevo.com/v3/smtp/email")
-        self.assertEqual(owner_request.get_header("Api-key"), "test-only-brevo-key")
-        owner_message = json.loads(owner_request.data)
-        self.assertEqual(owner_message["to"], [{"email": "owner@example.com"}])
-        self.assertIn("/review/", owner_message["textContent"])
-
-        review_link = next(
-            line for line in owner_message["textContent"].splitlines() if "/review/" in line
-        )
-        review_token = review_link.rsplit("#", 1)[1]
-        approval = self.client.post(
-            f"/api/reviews/{order['order_id']}",
-            json={"action": "approve", "token": review_token},
-        )
-        self.assertEqual(approval.status_code, 200)
-        self.assertEqual(approval.get_json()["customer_email_status"], "sent")
-        customer_request = urlopen.call_args_list[1].args[0]
-        customer_message = json.loads(customer_request.data)
-        self.assertEqual(customer_message["to"], [{"email": "customer@example.com"}])
-        self.assertIn("confirmed", customer_message["subject"])
-        self.assertIn("View your order", customer_message["textContent"])
-        customer_token = customer_message["textContent"].split("#", 1)[1].strip()
-        status_response = self.client.post(
-            f"/api/orders/{order['order_id']}/status",
-            json={"token": customer_token},
-        )
-        self.assertEqual(status_response.status_code, 200)
-        self.assertEqual(status_response.get_json()["status"], "approved")
-
-    @patch("server.urllib.request.urlopen")
-    def test_brevo_rejection_email_includes_reason(self, urlopen):
-        self.app.config.pop("REVIEW_EMAIL_SENDER")
-        self.app.config.update(
-            EMAIL_MODE="brevo",
-            OWNER_EMAIL="owner@example.com",
-            BREVO_API_KEY="test-only-brevo-key",
-            BREVO_FROM_EMAIL="orders@example.com",
-        )
-        response = self.client.post(
-            "/api/orders",
-            json={
-                "name": "মিতা দাস",
-                "email": "customer@example.com",
-                "phone": "9876543210",
-                "address": "১২, রবীন্দ্র সরণি, কলকাতা",
-                "items": [{"id": "aamer-achar", "quantity": 1}],
-                "language": "en",
-            },
-        )
-        order = response.get_json()
-        rejection_reason = "The selected item is currently unavailable."
-        owner_message = json.loads(urlopen.call_args_list[0].args[0].data)
-        review_link = next(
-            line for line in owner_message["textContent"].splitlines() if "/review/" in line
-        )
-        review_token = review_link.rsplit("#", 1)[1]
-        rejection = self.client.post(
-            f"/api/reviews/{order['order_id']}",
-            json={
-                "action": "reject",
-                "token": review_token,
-                "reason": rejection_reason,
-            },
-        )
-
-        self.assertEqual(rejection.status_code, 200)
-        self.assertEqual(rejection.get_json()["customer_email_status"], "sent")
-        customer_message = json.loads(urlopen.call_args_list[1].args[0].data)
-        self.assertEqual(customer_message["to"], [{"email": "customer@example.com"}])
-        self.assertIn(rejection_reason, customer_message["textContent"])
-
-    def test_customer_email_is_required_and_validated(self):
-        response = self.client.post(
-            "/api/orders",
-            json={
-                "name": "মিতা দাস",
-                "phone": "9876543210",
-                "address": "১২, রবীন্দ্র সরণি, কলকাতা",
-                "items": [{"id": "aamer-achar", "quantity": 1}],
-            },
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("email", response.get_json()["fields"])
-        response = self.client.post(
-            "/api/orders",
-            json={
-                "name": "মিতা দাস",
-                "email": "not-an-email",
-                "phone": "9876543210",
-                "address": "১২, রবীন্দ্র সরণি, কলকাতা",
-                "items": [{"id": "aamer-achar", "quantity": 1}],
-            },
-        )
-        self.assertEqual(response.status_code, 400)
-        self.assertIn("email", response.get_json()["fields"])
 
     def test_optional_payment_screenshot_is_private_when_attached(self):
         response = self.post_order(
@@ -391,7 +185,6 @@ class StorefrontTests(unittest.TestCase):
     def test_order_review_approval_and_downloadable_bengali_pdf(self):
         payload = {
             "name": "মিতা দাস",
-            "email": "customer@example.com",
             "phone": "+91 98765-43210",
             "address": "১২, রবীন্দ্র সরণি, কলকাতা",
             "note": "",
@@ -505,7 +298,6 @@ class StorefrontTests(unittest.TestCase):
             "/api/orders",
             json={
                 "name": "মিতা দাস",
-                "email": "customer@example.com",
                 "phone": "9876543210",
                 "address": "১২, রবীন্দ্র সরণি, কলকাতা",
                 "items": [{"id": "aamer-achar", "quantity": 1}],

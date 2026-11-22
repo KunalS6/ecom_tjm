@@ -35,7 +35,6 @@ async function loadReview() {
   summary.append(
     addDetail("Order", order.order_id.slice(0, 8).toUpperCase()),
     addDetail("Name", order.name),
-    addDetail("Email", order.email),
     addDetail("Phone", order.phone),
     addDetail("Address", order.address),
     addDetail("Payment reference", order.payment_reference),
@@ -66,13 +65,11 @@ async function decide(action) {
   statusMessage.hidden = false;
   statusMessage.textContent = action === "approve" ? "Saving approval…" : "Saving rejection…";
   try {
-    const response = await reviewRequest(action, reason);
-    const result = await response.json();
+    await reviewRequest(action, reason);
     detailsPanel.hidden = true;
-    const decision = action === "approve" ? "Order accepted." : "Order rejected.";
-    statusMessage.textContent = result.customer_email_status === "sent"
-      ? `${decision} A notification email was sent to the customer.`
-      : `${decision} The customer email could not be sent (${result.customer_email_status}). Check the email provider configuration.`;
+    statusMessage.textContent = action === "approve"
+      ? "Order accepted. The customer will see the confirmation and invoice option."
+      : "Order rejected. The customer will see your reason on the order status page.";
   } catch (error) {
     statusMessage.textContent = error.message;
     buttons.forEach((button) => { button.disabled = false; });

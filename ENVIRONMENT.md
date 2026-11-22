@@ -57,67 +57,47 @@ SQLite, JSON, email composition, token generation, and browser interactions use 
 
 1. Checkout saves the customer's name, phone, address, note, chosen products, prices, and total to SQLite at `instance\orders.sqlite3`.
 2. Payment reference and screenshot are optional until the business supplies payment instructions. If attached, a screenshot must be JPEG, PNG, or WebP and at most 5 MB; it is re-encoded to remove metadata and stored outside the public website directory.
-3. Configure email delivery below to email the owner a private review link. In local console mode the link is printed in the Flask terminal and **not emailed**. Review links expire after 48 hours. Do not share links or terminal output.
+3. Configure Gmail SMTP below to email the owner a private review link. By default, the link is printed in the Flask terminal and **not emailed**. Review links expire after 48 hours. Do not share links or terminal output.
 4. The reviewer accepts or rejects the order from the private review page. Rejection requires a reason. The customer status link shows all order details, decision, and rejection reason; accepted orders can download a Bengali PDF invoice.
 5. SMS is attempted after either decision only when a sender is configured. Approval SMS confirms the order; rejection SMS includes the reviewer-provided reason. Receipt tokens expire after 30 days.
 
 Use fictional customer information during local testing. The local development server, SQLite database, and local screenshot storage are not a secure production service.
 
-## Email delivery for order review and customer decisions
+## Gmail SMTP for order review email
 
-Checkout asks the customer for an email address. New-order review email goes to `TOKJHAL_OWNER_EMAIL` and includes a private link to approve or reject the order. When the owner decides, the app emails the customer the decision and a private link to order status. Review links expire after 48 hours; customer status links expire after 30 days.
+New-order review email is sent to `tokjhalmistico.2027@gmail.com`. The message includes the order details and a secure link to accept or reject the order. The review link uses `TOKJHAL_PUBLIC_BASE_URL`; on Render the app automatically uses Render's `RENDER_EXTERNAL_URL`.
 
-Render is configured to send through the Brevo HTTPS API because this Render service cannot connect to Gmail SMTP. Create a free Brevo account, register and verify a sender address, then create an API key. Configure:
-
-- `TOKJHAL_EMAIL_MODE`: `brevo`
-- `TOKJHAL_BREVO_API_KEY`: the Brevo API key (keep it secret)
-- `TOKJHAL_BREVO_FROM_NAME`: sender display name (default `Tok Jhal Misti Co.`)
-- `TOKJHAL_BREVO_FROM_EMAIL`: the exact sender address verified in Brevo
-- `TOKJHAL_OWNER_EMAIL`: the inbox that receives review links
-
-Brevo may allow you to verify your Gmail address as a sender by sending it a confirmation code; if it requires domain authentication, follow its setup instructions. Do not put credentials in source code, `render.yaml`, or GitHub. Resend and SMTP remain available as optional modes, but Gmail SMTP failed from this Render service with a network error.
+To send mail from the business Gmail account, enable 2-Step Verification and create a Gmail app password in the account's security settings. Use the app password, not the regular Gmail password. Never put credentials in source code or commit them.
 
 For local testing, set these variables in the same PowerShell terminal before starting Flask:
 
 ```powershell
-$env:TOKJHAL_EMAIL_MODE = "brevo"
+$env:TOKJHAL_EMAIL_MODE = "smtp"
 $env:TOKJHAL_OWNER_EMAIL = "tokjhalmistico.2027@gmail.com"
-$env:TOKJHAL_BREVO_API_KEY = "your-brevo-api-key"
-$env:TOKJHAL_BREVO_FROM_NAME = "Tok Jhal Misti Co."
-$env:TOKJHAL_BREVO_FROM_EMAIL = "your-verified-sender@example.com"
+$env:TOKJHAL_SMTP_USERNAME = "tokjhalmistico.2027@gmail.com"
+$env:TOKJHAL_SMTP_PASSWORD = "your-16-character-app-password"
 $env:TOKJHAL_PUBLIC_BASE_URL = "http://127.0.0.1:5000"
 python server.py
 ```
 
 ### Render setup
 
-The root `render.yaml` defines the Flask web service and sets Brevo mode and the business recipient. It declares the Brevo API key and sender address as dashboard-provided values (`sync: false`), so no credentials are stored in the repository.
+The root `render.yaml` defines a free Flask web service on Python 3.13.3, installs dependencies, starts the app with Gunicorn bound to Render's port, and sets Gmail SMTP mode and the business recipient. It declares the SMTP username and password as dashboard-provided secrets (`sync: false`) so no credentials are stored in the repository.
 
-1. In Brevo, add and verify the sender email address, then create an API key.
-2. In Render's service **Environment** settings, set `TOKJHAL_EMAIL_MODE=brevo`, `TOKJHAL_BREVO_API_KEY`, and `TOKJHAL_BREVO_FROM_EMAIL`. Keep `TOKJHAL_OWNER_EMAIL` set to the business inbox.
-3. Save/redeploy. Review Render logs for Brevo API errors.
-4. Place a test order with an email address you can access. Confirm the owner receives the review email. Approve or reject the test order and confirm the customer receives a decision email. Check spam folders and Brevo's transactional email logs if needed.
+1. Push the repository to GitHub and connect it to Render using **New → Blueprint**; select the repository's `render.yaml`.
+2. In Render's Blueprint setup or the service's **Environment** settings, provide:
+   - `TOKJHAL_SMTP_USERNAME`: `tokjhalmistico.2027@gmail.com`
+   - `TOKJHAL_SMTP_PASSWORD`: the Gmail app password
+3. Deploy or trigger a redeploy. Review Render logs for SMTP configuration/authentication errors.
+4. Place a test order using your own test details. Confirm `notification_status` is `sent` in the response/logs and check the business inbox's spam folder. The email's review button opens the order's private accept/reject page.
 
-Never paste API keys into chat, source code, screenshots, or GitHub. If a key is exposed, revoke it and create a replacement. Render automatically supplies its public URL when creating order links.
-
-## Persistent order and payment-proof storage on Render
-
-The app supports persistent paths through `TOKJHAL_DATABASE` and `TOKJHAL_PRIVATE_STORAGE`. Render's filesystem is ephemeral unless a persistent disk is attached. Render currently requires a paid web service for persistent disks; this repository does not automatically upgrade the service or create a billable disk.
-
-To keep orders and private payment screenshots across deploys/restarts:
-
-1. Upgrade the Render web service to a plan that supports persistent disks and attach a disk mounted at `/var/data`.
-2. Set `TOKJHAL_DATABASE` to `/var/data/orders.sqlite3`.
-3. Set `TOKJHAL_PRIVATE_STORAGE` to `/var/data/private`.
-4. Redeploy and verify that the disk is mounted before accepting new orders.
-
-Without this disk, local SQLite data and uploaded payment proofs may be lost on redeploy/restart. Previously lost orders cannot be recovered from the current service filesystem.
+Do not paste the app password into chat, source code, `render.yaml`, screenshots, or GitHub. If credentials were ever committed, revoke the app password and create a new one. The local URL only works on the machine running Flask; Render automatically supplies its public URL when creating review links.
 
 ## SMS and production readiness
 
 No SMS provider has been selected or configured, so SMS will not actually be delivered yet. The code calls the `SMS_SENDER` callback with an approval confirmation or rejection reason; connect this to a provider and configure its credentials before launch.
 
-Do not deploy this prototype to accept actual orders until persistent storage and email delivery are configured and verified. Before production, the business must verify its real payment destination and prices, choose and configure an SMS provider, provide monitored email, and arrange HTTPS, persistent database and object storage, backups, access controls, retention/deletion policy, monitoring, and recovery procedures. Review the privacy and payment-handling requirements for the operating region.
+Do not deploy this prototype to accept actual orders. Before production, the business must verify its real payment destination and prices, choose and configure an SMS provider, provide monitored email, and arrange HTTPS, a production WSGI server, persistent private database and object storage, backups, access controls, retention/deletion policy, monitoring, and recovery procedures. Review the privacy and payment-handling requirements for the operating region. No hosting provider or free tier makes the current local storage configuration production-ready.
 
 ## Hosting options for a preview
 
