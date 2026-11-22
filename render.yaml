@@ -10,14 +10,10 @@ services:
       - key: PYTHON_VERSION
         value: 3.13.3
       - key: TOKJHAL_EMAIL_MODE
-        value: smtp
+        value: resend
       - key: TOKJHAL_OWNER_EMAIL
         value: tokjhalmistico.2027@gmail.com
-      - key: TOKJHAL_SMTP_HOST
-        value: smtp.gmail.com
-      - key: TOKJHAL_SMTP_PORT
-        value: 587
-      - key: TOKJHAL_SMTP_USERNAME
+      - key: TOKJHAL_RESEND_API_KEY
         sync: false
-      - key: TOKJHAL_SMTP_PASSWORD
+      - key: TOKJHAL_RESEND_FROM
         sync: false

@@ -2,6 +2,7 @@ import json
 import sqlite3
 import tempfile
 import unittest
+import urllib.error
 from contextlib import closing
 from io import BytesIO
 from pathlib import Path
@@ -94,6 +95,23 @@ class StorefrontTests(unittest.TestCase):
             "https://tok-jhal-misti.onrender.com",
         )
 
+    def test_persistent_storage_environment_paths_are_used(self):
+        database_path = Path(self.temp_directory.name) / "persistent" / "orders.sqlite3"
+        private_storage_path = Path(self.temp_directory.name) / "persistent" / "private"
+        with patch.dict(
+            "os.environ",
+            {
+                "TOKJHAL_DATABASE": str(database_path),
+                "TOKJHAL_PRIVATE_STORAGE": str(private_storage_path),
+            },
+        ):
+            app = create_app()
+
+        self.assertEqual(app.config["DATABASE"], str(database_path))
+        self.assertEqual(app.config["PRIVATE_STORAGE"], str(private_storage_path))
+        self.assertTrue(database_path.is_file())
+        self.assertTrue((private_storage_path / "payment-proofs").is_dir())
+
     def test_order_can_be_placed_without_payment_number_or_screenshot(self):
         response = self.client.post(
             "/api/orders",
@@ -146,6 +164,65 @@ class StorefrontTests(unittest.TestCase):
             "Review and accept or reject this order",
             message.get_body(preferencelist=("html",)).get_content(),
         )
+
+    @patch("server.urllib.request.urlopen")
+    def test_resend_order_notification_targets_business_and_contains_review_link(self, urlopen):
+        self.app.config.pop("REVIEW_EMAIL_SENDER")
+        self.app.config.update(
+            EMAIL_MODE="resend",
+            OWNER_EMAIL="tokjhalmistico.2027@gmail.com",
+            PUBLIC_BASE_URL="https://tok-jhal-misti.example",
+            RESEND_API_KEY="test-only-api-key",
+            RESEND_FROM="Tok Jhal Misti <orders@example.com>",
+        )
+        response = self.client.post(
+            "/api/orders",
+            json={
+                "name": "মিতা দাস",
+                "phone": "9876543210",
+                "address": "১২, রবীন্দ্র সরণি, কলকাতা",
+                "items": [{"id": "aamer-achar", "quantity": 1}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.get_json()["notification_status"], "sent")
+        api_request = urlopen.call_args.args[0]
+        self.assertEqual(api_request.full_url, "https://api.resend.com/emails")
+        self.assertEqual(api_request.get_header("Authorization"), "Bearer test-only-api-key")
+        payload = json.loads(api_request.data)
+        self.assertEqual(payload["to"], ["tokjhalmistico.2027@gmail.com"])
+        self.assertEqual(payload["from"], "Tok Jhal Misti <orders@example.com>")
+        self.assertIn("https://tok-jhal-misti.example/review/", payload["text"])
+        self.assertIn("Review and accept or reject this order", payload["html"])
+
+    @patch("server.urllib.request.urlopen")
+    def test_resend_api_error_marks_order_notification_failed(self, urlopen):
+        self.app.config.pop("REVIEW_EMAIL_SENDER")
+        self.app.config.update(
+            EMAIL_MODE="resend",
+            RESEND_API_KEY="test-only-api-key",
+            RESEND_FROM="Tok Jhal Misti <orders@example.com>",
+        )
+        urlopen.side_effect = urllib.error.HTTPError(
+            "https://api.resend.com/emails",
+            401,
+            "Unauthorized",
+            {},
+            None,
+        )
+        response = self.client.post(
+            "/api/orders",
+            json={
+                "name": "মিতা দাস",
+                "phone": "9876543210",
+                "address": "১২, রবীন্দ্র সরণি, কলকাতা",
+                "items": [{"id": "aamer-achar", "quantity": 1}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.get_json()["notification_status"], "failed")
 
     def test_optional_payment_screenshot_is_private_when_attached(self):
         response = self.post_order(

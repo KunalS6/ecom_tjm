@@ -8,6 +8,8 @@ import secrets
 import smtplib
 import sqlite3
 import uuid
+import urllib.error
+import urllib.request
 from datetime import datetime, timedelta, timezone
 from contextlib import closing
 from email.message import EmailMessage
@@ -47,8 +49,8 @@ PRODUCT_BY_ID = {product["id"]: product for product in PRODUCTS}
 
 def create_app(database_path: Path | None = None, private_storage_path: Path | None = None) -> Flask:
     app = Flask(__name__, template_folder=".", static_folder=None)
-    app.config["DATABASE"] = str(database_path or DATABASE)
-    app.config["PRIVATE_STORAGE"] = str(private_storage_path or PRIVATE_STORAGE)
+    app.config["DATABASE"] = str(database_path or os.environ.get("TOKJHAL_DATABASE", DATABASE))
+    app.config["PRIVATE_STORAGE"] = str(private_storage_path or os.environ.get("TOKJHAL_PRIVATE_STORAGE", PRIVATE_STORAGE))
     app.config["MAX_CONTENT_LENGTH"] = MAX_PROOF_BYTES + 64 * 1024
     app.config["EMAIL_MODE"] = os.environ.get("TOKJHAL_EMAIL_MODE", "console").lower()
     app.config["OWNER_EMAIL"] = os.environ.get("TOKJHAL_OWNER_EMAIL", DEFAULT_OWNER_EMAIL)
@@ -61,6 +63,8 @@ def create_app(database_path: Path | None = None, private_storage_path: Path | N
     app.config["SMTP_PORT"] = int(os.environ.get("TOKJHAL_SMTP_PORT", "587"))
     app.config["SMTP_USERNAME"] = os.environ.get("TOKJHAL_SMTP_USERNAME", "")
     app.config["SMTP_PASSWORD"] = os.environ.get("TOKJHAL_SMTP_PASSWORD", "")
+    app.config["RESEND_API_KEY"] = os.environ.get("TOKJHAL_RESEND_API_KEY", "")
+    app.config["RESEND_FROM"] = os.environ.get("TOKJHAL_RESEND_FROM", "")
     initialize_database(app.config["DATABASE"])
     Path(app.config["PRIVATE_STORAGE"], "payment-proofs").mkdir(parents=True, exist_ok=True)
 
@@ -452,14 +456,22 @@ def send_review_notification(app: Flask, order: sqlite3.Row, review_url: str) ->
     if app.config["EMAIL_MODE"] == "console":
         app.logger.warning("NEW ORDER %s — review link (not emailed): %s", order["public_id"], review_url)
         return "console"
-    if app.config["EMAIL_MODE"] != "smtp":
+    email_mode = app.config["EMAIL_MODE"]
+    if email_mode not in {"smtp", "resend"}:
         app.logger.error("Unsupported email mode: %s", app.config["EMAIL_MODE"])
         return "failed"
-    username = app.config["SMTP_USERNAME"]
-    password = app.config["SMTP_PASSWORD"]
-    if not username or not password:
-        app.logger.error("SMTP mode is enabled but SMTP username/password are not configured.")
-        return "failed"
+    if email_mode == "smtp":
+        username = app.config["SMTP_USERNAME"]
+        password = app.config["SMTP_PASSWORD"]
+        if not username or not password:
+            app.logger.error("SMTP mode is enabled but SMTP username/password are not configured.")
+            return "failed"
+    else:
+        api_key = app.config["RESEND_API_KEY"]
+        sender = app.config["RESEND_FROM"]
+        if not api_key or not sender:
+            app.logger.error("Resend mode is enabled but the API key/from address are not configured.")
+            return "failed"
 
     item_lines = [
         f"- {item['name']} × {item['quantity']} — ₹{item['line_total']}"
@@ -467,7 +479,7 @@ def send_review_notification(app: Flask, order: sqlite3.Row, review_url: str) ->
     ]
     message = EmailMessage()
     message["Subject"] = f"New order to review — {order['public_id']}"
-    message["From"] = username
+    message["From"] = app.config["SMTP_USERNAME"] if email_mode == "smtp" else app.config["RESEND_FROM"]
     message["To"] = app.config["OWNER_EMAIL"]
     if language == "en":
         message.set_content(
@@ -504,11 +516,41 @@ def send_review_notification(app: Flask, order: sqlite3.Row, review_url: str) ->
         subtype="html",
     )
     try:
-        with smtplib.SMTP(app.config["SMTP_HOST"], app.config["SMTP_PORT"], timeout=15) as smtp:
-            smtp.starttls()
-            smtp.login(username, password)
-            smtp.send_message(message)
-    except (OSError, smtplib.SMTPException) as error:
+        if email_mode == "resend":
+            payload = {
+                "from": app.config["RESEND_FROM"],
+                "to": [app.config["OWNER_EMAIL"]],
+                "subject": message["Subject"],
+                "text": message.get_body(preferencelist=("plain",)).get_content(),
+                "html": message.get_body(preferencelist=("html",)).get_content(),
+            }
+            api_request = urllib.request.Request(
+                "https://api.resend.com/emails",
+                data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
+                headers={
+                    "Authorization": f"Bearer {app.config['RESEND_API_KEY']}",
+                    "Content-Type": "application/json",
+                    "Idempotency-Key": order["public_id"],
+                },
+                method="POST",
+            )
+            with urllib.request.urlopen(api_request, timeout=15):
+                pass
+        else:
+            with smtplib.SMTP(app.config["SMTP_HOST"], app.config["SMTP_PORT"], timeout=15) as smtp:
+                smtp.starttls()
+                smtp.login(app.config["SMTP_USERNAME"], app.config["SMTP_PASSWORD"])
+                smtp.send_message(message)
+    except urllib.error.HTTPError as error:
+        details = error.read().decode("utf-8", errors="replace")
+        app.logger.error(
+            "Email API rejected order %s with HTTP %s: %s",
+            order["public_id"],
+            error.code,
+            details,
+        )
+        return "failed"
+    except (OSError, urllib.error.URLError, smtplib.SMTPException) as error:
         app.logger.exception("Could not send order review email for %s.", order["public_id"], exc_info=error)
         return "failed"
     return "sent"
