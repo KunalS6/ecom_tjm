@@ -5,6 +5,7 @@ import unittest
 from contextlib import closing
 from io import BytesIO
 from pathlib import Path
+from unittest.mock import patch
 
 from PIL import Image
 
@@ -76,6 +77,23 @@ class StorefrontTests(unittest.TestCase):
         review_script.close()
         order_script.close()
 
+    @patch.dict(
+        "os.environ",
+        {
+            "TOKJHAL_PUBLIC_BASE_URL": "",
+            "RENDER_EXTERNAL_URL": "https://tok-jhal-misti.onrender.com",
+        },
+    )
+    def test_render_external_url_is_used_for_private_review_links(self):
+        app = create_app(
+            Path(self.temp_directory.name) / "render-orders.sqlite3",
+            Path(self.temp_directory.name) / "render-private",
+        )
+        self.assertEqual(
+            app.config["PUBLIC_BASE_URL"],
+            "https://tok-jhal-misti.onrender.com",
+        )
+
     def test_order_can_be_placed_without_payment_number_or_screenshot(self):
         response = self.client.post(
             "/api/orders",
@@ -93,6 +111,41 @@ class StorefrontTests(unittest.TestCase):
                 (response.get_json()["order_id"],),
             ).fetchone()[0]
         self.assertIsNone(proof_path)
+
+    @patch("server.smtplib.SMTP")
+    def test_smtp_order_notification_targets_business_and_contains_review_link(self, smtp_factory):
+        self.app.config.pop("REVIEW_EMAIL_SENDER")
+        self.app.config.update(
+            EMAIL_MODE="smtp",
+            OWNER_EMAIL="tokjhalmistico.2027@gmail.com",
+            PUBLIC_BASE_URL="https://tok-jhal-misti.example",
+            SMTP_USERNAME="tokjhalmistico.2027@gmail.com",
+            SMTP_PASSWORD="test-only-app-password",
+        )
+        response = self.client.post(
+            "/api/orders",
+            json={
+                "name": "মিতা দাস",
+                "phone": "9876543210",
+                "address": "১২, রবীন্দ্র সরণি, কলকাতা",
+                "items": [{"id": "aamer-achar", "quantity": 1}],
+            },
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.get_json()["notification_status"], "sent")
+        smtp = smtp_factory.return_value.__enter__.return_value
+        message = smtp.send_message.call_args.args[0]
+        self.assertEqual(message["To"], "tokjhalmistico.2027@gmail.com")
+        self.assertEqual(message["From"], "tokjhalmistico.2027@gmail.com")
+        self.assertIn(
+            "https://tok-jhal-misti.example/review/",
+            message.get_body(preferencelist=("plain",)).get_content(),
+        )
+        self.assertIn(
+            "Review and accept or reject this order",
+            message.get_body(preferencelist=("html",)).get_content(),
+        )
 
     def test_optional_payment_screenshot_is_private_when_attached(self):
         response = self.post_order(

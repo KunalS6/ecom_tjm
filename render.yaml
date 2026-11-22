@@ -1,0 +1,23 @@
+services:
+  - type: web
+    name: tok-jhal-misti
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn server:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.13.3
+      - key: TOKJHAL_EMAIL_MODE
+        value: smtp
+      - key: TOKJHAL_OWNER_EMAIL
+        value: tokjhalmistico.2027@gmail.com
+      - key: TOKJHAL_SMTP_HOST
+        value: smtp.gmail.com
+      - key: TOKJHAL_SMTP_PORT
+        value: 587
+      - key: TOKJHAL_SMTP_USERNAME
+        sync: false
+      - key: TOKJHAL_SMTP_PASSWORD
+        sync: false

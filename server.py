@@ -52,7 +52,11 @@ def create_app(database_path: Path | None = None, private_storage_path: Path | N
     app.config["MAX_CONTENT_LENGTH"] = MAX_PROOF_BYTES + 64 * 1024
     app.config["EMAIL_MODE"] = os.environ.get("TOKJHAL_EMAIL_MODE", "console").lower()
     app.config["OWNER_EMAIL"] = os.environ.get("TOKJHAL_OWNER_EMAIL", DEFAULT_OWNER_EMAIL)
-    app.config["PUBLIC_BASE_URL"] = os.environ.get("TOKJHAL_PUBLIC_BASE_URL", "http://127.0.0.1:5000").rstrip("/")
+    app.config["PUBLIC_BASE_URL"] = (
+        os.environ.get("TOKJHAL_PUBLIC_BASE_URL")
+        or os.environ.get("RENDER_EXTERNAL_URL")
+        or "http://127.0.0.1:5000"
+    ).rstrip("/")
     app.config["SMTP_HOST"] = os.environ.get("TOKJHAL_SMTP_HOST", "smtp.gmail.com")
     app.config["SMTP_PORT"] = int(os.environ.get("TOKJHAL_SMTP_PORT", "587"))
     app.config["SMTP_USERNAME"] = os.environ.get("TOKJHAL_SMTP_USERNAME", "")

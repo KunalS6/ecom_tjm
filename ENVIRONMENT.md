@@ -49,6 +49,7 @@ These are pinned in `requirements.txt` and were installed in the verified virtua
 | fpdf2 | 2.9.0 | Generate order confirmation PDFs |
 | fonttools | 4.68.0 | PDF font support dependency |
 | uharfbuzz | 0.57.0 | Bengali text shaping in PDFs |
+| gunicorn | 23.0.0 | Production WSGI server used by Render |
 
 SQLite, JSON, email composition, token generation, and browser interactions use the Python standard library or browser APIs. No real email or SMS service dependency is installed.
 
@@ -62,20 +63,35 @@ SQLite, JSON, email composition, token generation, and browser interactions use 
 
 Use fictional customer information during local testing. The local development server, SQLite database, and local screenshot storage are not a secure production service.
 
-## Optional Gmail SMTP for local testing
+## Gmail SMTP for order review email
 
-Email delivery is off by default. To send review links using a Gmail account, first enable 2-Step Verification and create an app password in the account's security settings. Never put the account password in source code or commit it. Set these variables in the same PowerShell terminal before starting Flask:
+New-order review email is sent to `tokjhalmistico.2027@gmail.com`. The message includes the order details and a secure link to accept or reject the order. The review link uses `TOKJHAL_PUBLIC_BASE_URL`; on Render the app automatically uses Render's `RENDER_EXTERNAL_URL`.
+
+To send mail from the business Gmail account, enable 2-Step Verification and create a Gmail app password in the account's security settings. Use the app password, not the regular Gmail password. Never put credentials in source code or commit them.
+
+For local testing, set these variables in the same PowerShell terminal before starting Flask:
 
 ```powershell
 $env:TOKJHAL_EMAIL_MODE = "smtp"
 $env:TOKJHAL_OWNER_EMAIL = "tokjhalmistico.2027@gmail.com"
-$env:TOKJHAL_SMTP_USERNAME = "your-sender@gmail.com"
+$env:TOKJHAL_SMTP_USERNAME = "tokjhalmistico.2027@gmail.com"
 $env:TOKJHAL_SMTP_PASSWORD = "your-16-character-app-password"
 $env:TOKJHAL_PUBLIC_BASE_URL = "http://127.0.0.1:5000"
 python server.py
 ```
 
-Use the app password only in your local environment. A review email includes an HTML button linking to the private, expiring review page; accept/reject actions happen on that page, and the optional screenshot is not attached to email. The default local URL works only on the computer running the app, not on a phone or another computer. SMTP delivery has not been tested with real credentials.
+### Render setup
+
+The root `render.yaml` defines a free Flask web service on Python 3.13.3, installs dependencies, starts the app with Gunicorn bound to Render's port, and sets Gmail SMTP mode and the business recipient. It declares the SMTP username and password as dashboard-provided secrets (`sync: false`) so no credentials are stored in the repository.
+
+1. Push the repository to GitHub and connect it to Render using **New → Blueprint**; select the repository's `render.yaml`.
+2. In Render's Blueprint setup or the service's **Environment** settings, provide:
+   - `TOKJHAL_SMTP_USERNAME`: `tokjhalmistico.2027@gmail.com`
+   - `TOKJHAL_SMTP_PASSWORD`: the Gmail app password
+3. Deploy or trigger a redeploy. Review Render logs for SMTP configuration/authentication errors.
+4. Place a test order using your own test details. Confirm `notification_status` is `sent` in the response/logs and check the business inbox's spam folder. The email's review button opens the order's private accept/reject page.
+
+Do not paste the app password into chat, source code, `render.yaml`, screenshots, or GitHub. If credentials were ever committed, revoke the app password and create a new one. The local URL only works on the machine running Flask; Render automatically supplies its public URL when creating review links.
 
 ## SMS and production readiness
 

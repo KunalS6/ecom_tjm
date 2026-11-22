@@ -9,3 +9,4 @@ pillow==12.3.0
 fpdf2==2.9.0
 fonttools==4.68.0
 uharfbuzz==0.57.0
+gunicorn==23.0.0

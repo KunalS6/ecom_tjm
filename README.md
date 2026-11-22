@@ -22,3 +22,9 @@ The payment number is intentionally not shown or configured yet. Customers are w
 This is a **local prototype, not ready for real customer data or payments**. Configure email, SMS, secure hosting, persistent storage, backups, and the real payment destination before launch.
 
 The sample product prices are placeholders; set actual prices and pack sizes before any real orders.
+
+## Deploy a preview on Render
+
+The repository includes a Render Blueprint in `render.yaml`. Connect this repository in Render and create a Blueprint; Render will install the requirements and start Flask with Gunicorn. During Blueprint setup, provide `TOKJHAL_SMTP_USERNAME` and `TOKJHAL_SMTP_PASSWORD` as secret environment values in the Render dashboard. Use the Gmail address and an app password, not the regular account password. Deployment and Gmail setup details are in [ENVIRONMENT.md](ENVIRONMENT.md).
+
+Render's free service uses an ephemeral filesystem and may sleep when idle. Treat this deployment as a disposable preview only: its SQLite orders and uploaded screenshots can be lost on restart, sleep, or redeploy. Do not accept real customer orders or payment proofs on this setup.
